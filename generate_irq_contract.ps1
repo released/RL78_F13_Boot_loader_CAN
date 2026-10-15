@@ -77,6 +77,56 @@ f13_boot_default_isr:
     Generated (Join-Path $PSScriptRoot 'f13_boot_vectors.asm') ($text+"`n")
 } else {
     $AppProject = (Resolve-Path -LiteralPath $AppProject).Path
+    # App-local JSON is the only editable image identity input. No INC fallback.
+    $image = [IO.File]::ReadAllText((Join-Path $AppProject 'app_image.json')) | ConvertFrom-Json
+    $keys = @($image.PSObject.Properties.Name | Sort-Object)
+    if (($keys -join ',') -cne 'build,role,target,transport,version') {
+        throw 'app_image.json requires exactly version/build/target/role/transport.'
+    }
+    if ($image.version -isnot [string] -or $image.version -cnotmatch '^0x[0-9A-Fa-f]{8}$' -or
+        $image.target -isnot [string] -or $image.target -cnotmatch '^0x[0-9A-Fa-f]{4}$' -or
+        $image.role -cne 'DEVICE_APP' -or $image.transport -cne 'CAN') {
+        throw 'Invalid version/target or non-CAN DEVICE_APP identity.'
+    }
+    $version = [Convert]::ToUInt32($image.version.Substring(2),16)
+    if ($version -eq [uint32]::MaxValue -or
+        ([Convert]::ToUInt32($image.target.Substring(2),16)) -ne (Macro 'CAN_BOOT_TARGET_ID') -or
+        ($image.build -isnot [int] -and $image.build -isnot [long]) -or
+        $image.build -lt 0 -or $image.build -ge [uint32]::MaxValue) {
+        throw 'Image identity does not match F13 Boot, or version/build is invalid.'
+    }
+    $equ = [ordered]@{
+        FLASH_TABLE = $start
+        INTERRUPT_OFFSET = (Macro 'CAN_BOOT_MANIFEST_OFFSET')
+        APP_MANIFEST_TABLE = ($start + (Macro 'CAN_BOOT_MANIFEST_OFFSET'))
+        IMAGE_MANIFEST_MAGIC = (Macro 'CAN_BOOT_MANIFEST_MAGIC')
+        IMAGE_MANIFEST_FORMAT_INFO = ((Macro 'CAN_BOOT_IMAGE_FORMAT_VERSION') -bor ((Macro 'CAN_BOOT_MANIFEST_SIZE') -shl 8) -bor ((Macro 'CAN_BOOT_MANIFEST_FLAGS') -shl 16))
+        IMAGE_METADATA_REGION_SIZE = (Macro 'CAN_BOOT_METADATA_REGION_SIZE')
+        IMAGE_MANIFEST_PROTOCOL = ((Macro 'CAN_BOOT_PROTOCOL_ID') -bor ((Macro 'CAN_BOOT_PROTOCOL_VERSION') -shl 16) -bor ((Macro 'CAN_BOOT_CHECKSUM_CRC32') -shl 24))
+        IMAGE_MANIFEST_TARGET = ((Macro 'CAN_BOOT_TARGET_ID') -bor ((Macro 'CAN_BOOT_CAN_MODE_CLASSICAL') -shl 16) -bor ((Macro 'CAN_BOOT_CAN_ID_STANDARD') -shl 24))
+        APP_IMAGE_VERSION = $version
+        APP_IMAGE_BUILD = [uint32]$image.build
+        IMAGE_SIZE_POST_BUILD = [uint32]::MaxValue
+        APP_REGION_SIZE = (Macro 'CAN_BOOT_APPLICATION_CAPACITY')
+        CODE_FLASH_SIZE = (Macro 'CAN_BOOT_CODE_FLASH_SIZE')
+        BOOT_RESERVED_SIZE = (Macro 'CAN_BOOT_RESERVED_SIZE')
+        FLASH_ERASE_BLOCK_SIZE = (Macro 'CAN_BOOT_ERASE_BLOCK_SIZE')
+        CAN_NOMINAL_BITRATE_MASK = (Macro 'CAN_BOOT_NOMINAL_500K_MASK')
+        CAN_DATA_BITRATE_MASK = (Macro 'CAN_BOOT_DATA_BITRATE_MASK')
+        CAN_REQUEST_ID = (Macro 'CAN_BOOT_REQUEST_ID')
+        CAN_RESPONSE_ID = (Macro 'CAN_BOOT_RESPONSE_ID')
+        MINIMUM_IMAGE_SIZE = (Macro 'CAN_BOOT_MINIMUM_IMAGE_SIZE')
+        IMAGE_POLICY_WORD = (Macro 'CAN_BOOT_POLICY_WORD')
+        IMAGE_IRQ_ABI = (Macro 'CAN_BOOT_IRQ_ABI')
+        IMAGE_MIN_BOOT_VERSION = (Macro 'CAN_BOOT_FIRMWARE_VERSION')
+    }
+    foreach ($field in @('PART_0','PART_1','PART_2','PART_3','FAMILY_0','FAMILY_1','FAMILY_2')) {
+        $equ['MCU_'+$field] = Macro ('CAN_BOOT_MCU_'+$field)
+    }
+    $table = "; Generated from this App's app_image.json and Boot contract. Do not edit.`n"
+    foreach ($field in $equ.Keys) {
+        $table += ('{0,-28} .EQU 0x{1:X8}' -f $field,$equ[$field])+"`n"
+    }
     $handlers = [IO.File]::ReadAllText((Join-Path $AppProject 'app_irq_handlers.json')) | ConvertFrom-Json
     $map = @{}
     foreach ($p in $handlers.PSObject.Properties) {
@@ -114,13 +164,10 @@ f13_app_default_brk:
     RETB
 '@
     Generated (Join-Path $AppProject 'app_irq_table.inc') ($text+"`n")
-    $table = [IO.File]::ReadAllText((Join-Path $AppProject 'ftable.inc'))
-    $identity = "/* Generated from this app's ftable.inc. Do not edit. */`n#ifndef F13_APP_IDENTITY_H`n#define F13_APP_IDENTITY_H`n"
-    foreach ($field in @('VERSION','BUILD')) {
-        $m = [regex]::Match($table, '(?m)^APP_IMAGE_'+$field+'\s+\.EQU\s+(0x[0-9A-Fa-f]+|[0-9]+)')
-        if (!$m.Success) { throw "Missing app-local APP_IMAGE_$field" }
-        $identity += '#define CAN_BOOT_APP_FIRMWARE_'+$field+' ('+$m.Groups[1].Value+"UL)`n"
-    }
+    Generated (Join-Path $AppProject 'ftable.inc') $table
+    $identity = "/* Generated from this App's app_image.json. Do not edit. */`n#ifndef F13_APP_IDENTITY_H`n#define F13_APP_IDENTITY_H`n"
+    $identity += ('#define CAN_BOOT_APP_FIRMWARE_VERSION (0x{0:X8}UL)' -f $version)+"`n"
+    $identity += ('#define CAN_BOOT_APP_FIRMWARE_BUILD ({0}UL)' -f [uint32]$image.build)+"`n"
     Generated (Join-Path $AppProject 'app_identity.h') ($identity+"#endif`n")
 }
 Write-Host "F13 $Mode IRQ contract $(if($CheckOnly){'verified'}else{'prepared'})."

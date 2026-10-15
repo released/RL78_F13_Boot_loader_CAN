@@ -5,6 +5,12 @@ CAN self-programming boot loader for the Renesas RL78/F13 R5F10BMG.
 Start with the [RL78 Boot/App porting guide (zh-TW)](https://released.github.io/slide_boot_loader_for_RL78/#boot-app-porting)
 when integrating your own app or designing a different bootloader workflow.
 
+For App metadata/IRQ editing, follow the
+[two-JSON device workshop](https://released.github.io/slide_boot_loader_for_RL78/#device-metadata-vector-workshop).
+App users edit app_image.json and app_irq_handlers.json. App-mode generation
+owns ftable.inc/identity/vector outputs; it does not rebuild Boot. Clean rebuild
+App after JSON changes; post-build rejects stale linked metadata/vectors.
+
 ## Fixed reusable IRQ contract (format6 / boot1.5.0)
 
 Boot owns all61 normal positions04..7C with generated assembly. App-only IRQ

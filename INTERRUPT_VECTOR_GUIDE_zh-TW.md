@@ -18,10 +18,11 @@ boot1.4.0 與 format6 app；之後在固定契約內新增一般 app 中斷，�
   startup 或 stack 清除；資料與 debug trace RAM 也不可重疊。
 - 保留4MHz X1／PLL32／CPU32／CAN16 的 shared board support 與交接，
   不可在 app 啟動時停止已有效的 inherited PLL。
-- Format6、CAN protocol4、targetF13B、standard ID700／701、
+- Format6、CAN protocol5、targetF13B、standard ID700／701、
   metadata／geometry／CRC 驗證仍必須一致。
 
-App 版本／build 以自己 ftable.inc 為來源，pre-build 產生 app_identity.h。
+使用者只編輯自己的 app_image.json 與 app_irq_handlers.json；pre-build 依 JSON
+及 matching Boot contract 產生 ftable.inc、app_identity.h 與 app_irq_table.inc，不手改生成檔。
 Boot 從已驗證的 installed metadata 讀 app 版本，不綁定 app 編譯版本。
 
 ## 向量歸屬與返回
@@ -67,7 +68,7 @@ F24 對 app 的原則相同，但用逐向量直接分支。兩者 MCU 的暫存
 3. 在 app_irq_handlers.json 加入實體 vector 與函式名，例如
    "0x34": "your_adc_handler"；不是中斷序號，只接受04..62有效一般位置。
 4. App pre-build 執行 generate_irq_contract.ps1 -Mode App -AppProject "."，
-   檢查已登錄來源的 pragma，產生 app_irq_table.inc／app_identity.h。
+   檢查兩份 JSON 與已登錄來源的 pragma，產生 ftable.inc／app_irq_table.inc／app_identity.h。
    不要手改生成檔，也不要修改 boot 的向量設定。
 5. 在 EI 前設定 app owner55、初始化周邊、清 pending flag、設定優先權並解除遮罩。
    新 app 必須保留 FF700／FF710 no-init；不能被 runtime stack 初始化掃掉。

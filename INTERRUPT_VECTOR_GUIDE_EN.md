@@ -18,11 +18,12 @@ For the complete engineering workflow, start with the
   startup. Keep stack, normal data and debug trace RAM outside these regions.
 - Retain the shared X1=4MHz / PLL32 / CPU32 / CAN16 handoff support. Do not
   stop a valid inherited PLL in app startup.
-- Metadata format6, CAN protocol4, targetF13B, standard IDs700/701 and exact
+- Metadata format6, CAN protocol5, targetF13B, standard IDs700/701 and exact
   metadata/geometry/CRC validation remain mandatory.
 
 The boot reads installed app version/build from validated metadata. The app's
-own ftable.inc generates app_identity.h during pre-build; changing app version
+own app_image.json and app_irq_handlers.json generate ftable.inc, app_identity.h
+and the vector table during pre-build; changing app version
 does not change a boot constant. An arbitrary standalone project is NOT
 automatically compatible merely because it has the same MCU name.
 
