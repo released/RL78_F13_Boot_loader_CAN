@@ -4,7 +4,7 @@
 boot1.4.0 與 format6 app；之後在固定契約內新增一般 app 中斷，只更新 app，
 不需重燒 boot。不是任意 standalone 專案都能不經整合直接套用。
 
-第一次移植先讀 [RL78 Boot/App 工程移植入口](../../../python/simple_renesas_isp_tool/docs/RL78_BOOT_APP_PORTING_GUIDE_zh-TW.md)，
+第一次移植先讀 [RL78 Boot/App 工程移植入口](https://released.github.io/slide_boot_loader_for_RL78/#boot-app-porting)，
 本篇補充 F13 向量實作細節，不取代記憶體、startup、封裝與實板驗證。
 
 ## 固定契約

@@ -2,7 +2,7 @@
 
 CAN self-programming boot loader for the Renesas RL78/F13 R5F10BMG.
 
-Start with the [RL78 Boot/App porting guide (zh-TW)](../../../python/simple_renesas_isp_tool/docs/RL78_BOOT_APP_PORTING_GUIDE_zh-TW.md)
+Start with the [RL78 Boot/App porting guide (zh-TW)](https://released.github.io/slide_boot_loader_for_RL78/#boot-app-porting)
 when integrating your own app or designing a different bootloader workflow.
 
 ## Fixed reusable IRQ contract (format6 / boot1.5.0)
@@ -29,8 +29,22 @@ one F13v5 update at Host115200/CAN500K,19244B/CRC CA0DF55C,301 sequential
 block ACKs,10963ms and matching END with zero reported transport/CAN errors.
 The new App's post-reset execution and the physical fault/IRQ matrix remain
 unverified by that log. Freeze Boot/App1.5.0; see the
-[delivery manifest](../../../python/simple_renesas_isp_tool/docs/FIRST_DELIVERY_20261015_zh-TW.md)
-for matching files, SHA-256, initial installation and remaining limits.
+[CAN update guide](https://released.github.io/slide_isp_tool_for_RL78/)
+for installation, image selection and validation limits.
+
+## Public examples and checkout layout
+
+- [CAN Transfer benchmark](https://github.com/released/RL78_F13_CAN_Transfer):
+  non-destructive communication testing, not a boot/application image.
+- [This Boot project](https://github.com/released/RL78_F13_Boot_loader_CAN).
+- [Matching App project](https://github.com/released/RL78_F13_Boot_loader_CAN_app).
+
+Clone Boot and App into the same parent directory using those exact repository
+names. Download ZIP users must remove the `-main` directory suffix. App uses
+Boot's board sources, CAN configuration and IRQ generator through sibling
+references. Build Boot first, then App; initially program `boot_app.hex`, and
+use App's `_update.bin` for subsequent CAN updates. A local compiler executable
+path in the build command is an installation example, not a source download.
 
 - CS+ / CC-RL build passes with zero errors.
 - Target is R5F10BMG: 128 KiB code flash and 8 KiB RAM.
@@ -122,8 +136,9 @@ errors retain boot and disable automatic return. Rejected START does not
 start writing; FSL init failure alone does not disable an existing timer.
 Clock/CAN failure resets/retries only for an invalid app; a valid app can run.
 Successful END resets and repeats all startup checks before app entry.
-The complete gate tables and diagrams are maintained in the tool's
-docs/F13_BOOT_UPDATE_FLOW_zh-TW.md section2.2 and synchronized local web guides.
+The complete gate tables and diagrams are in the
+[Boot/App guide](https://released.github.io/slide_boot_loader_for_RL78/#boot-app-porting)
+and the [CAN operating guide](https://released.github.io/slide_isp_tool_for_RL78/).
 
 P13.7 is not a boot-entry input. The product requirements assign buttons only
 to the F24 host board; the F13 application may still use P13.7/INTP0 for its

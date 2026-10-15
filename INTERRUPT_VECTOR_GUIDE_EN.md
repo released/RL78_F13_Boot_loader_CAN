@@ -5,7 +5,7 @@ and format6 app images must initially be installed together. Normal app IRQ
 additions then require only an app update, not a new boot image.
 
 For the complete engineering workflow, start with the
-[Boot/App porting guide (zh-TW)](../../../python/simple_renesas_isp_tool/docs/RL78_BOOT_APP_PORTING_GUIDE_zh-TW.md).
+[Boot/App porting guide (zh-TW)](https://released.github.io/slide_boot_loader_for_RL78/#boot-app-porting).
 
 ## Stable contract
 
