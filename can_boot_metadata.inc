@@ -3,6 +3,11 @@
 static unsigned long g_metadata_words[64];
 static unsigned short g_metadata_staged;
 static unsigned char g_metadata_sealed;
+static unsigned char g_metadata_error;
+/* No armed permission: FORCE_START applies only to its own START request. */
+#define VersionAllowed(policy, installed, command) \
+    ((command) == CAN_BOOT_CMD_FORCE_START || (policy) != 3U || \
+     g_metadata_words[4] >= (installed))
 
 static void MetadataReset(void)
 {
@@ -30,18 +35,23 @@ static unsigned char MetadataValid(const unsigned long __far *words)
     unsigned short i;
     unsigned long size;
     size = words[6];
+    g_metadata_error = CAN_BOOT_STATUS_BAD_IMAGE;
     if (size < CAN_BOOT_MINIMUM_IMAGE_SIZE || size > CAN_BOOT_APPLICATION_CAPACITY ||
-        (size & 3UL) || words[4] == 0xFFFFFFFFUL || words[5] == 0xFFFFFFFFUL ||
-        words[27] > CAN_BOOT_FIRMWARE_VERSION ||
-        (words[25] & 0xF8FFFFFFUL) != (CAN_BOOT_POLICY_WORD & 0x00FFFFFFUL) ||
-        (words[25] & 0x01000000UL) == 0UL)
+        (size & 3UL) || words[4] > 0xFFFFFFUL || words[5] == 0xFFFFFFFFUL || words[29] > 1UL)
     {
         return 0U;
     }
+    g_metadata_error = CAN_BOOT_STATUS_POLICY;
+    if (words[27] > CAN_BOOT_FIRMWARE_VERSION) return 0U;
     for (i = 0U; i < 64U; i++)
     {
-        if ((i >= 4U && i <= 6U) || i == 25U || i == 27U) continue;
-        if (words[i] != ((i < 32U) ? g_manifest_contract[i] : 0xFFFFFFFFUL)) return 0U;
+        if ((i >= 4U && i <= 6U) || i == 27U || i == 29U) continue;
+        if (words[i] != ((i < 32U) ? g_manifest_contract[i] : 0xFFFFFFFFUL))
+        {
+            g_metadata_error = (i == 25U) ? CAN_BOOT_STATUS_POLICY : (i == 26U) ? CAN_BOOT_STATUS_IRQ_ABI :
+                ((i >= 7U && i <= 11U) ? CAN_BOOT_STATUS_LAYOUT : CAN_BOOT_STATUS_METADATA);
+            return 0U;
+        }
     }
     return 1U;
 }
@@ -66,8 +76,8 @@ static unsigned char MetadataStage(unsigned short offset, const unsigned char *d
 static unsigned char MetadataSeal(unsigned long expected_crc)
 {
     g_metadata_sealed = 0U;
-    if (g_metadata_staged != 256U ||
-        !MetadataValid((const unsigned long __far *)g_metadata_words)) return CAN_BOOT_STATUS_BAD_IMAGE;
+    if (g_metadata_staged != 256U) return CAN_BOOT_STATUS_BAD_IMAGE;
+    if (!MetadataValid((const unsigned long __far *)g_metadata_words)) return g_metadata_error;
     if (F13_Crc32Bytes((const unsigned char __far *)g_metadata_words, 256UL) != expected_crc)
         return CAN_BOOT_STATUS_CRC_ERROR;
     g_metadata_sealed = 1U;

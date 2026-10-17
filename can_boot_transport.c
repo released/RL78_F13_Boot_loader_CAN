@@ -28,6 +28,7 @@ static volatile unsigned short g_can_boot_inactivity_ms;
 static volatile unsigned char g_can_boot_timeout_configured;
 static volatile unsigned char g_can_boot_timeout_enabled;
 static volatile unsigned char g_can_boot_timeout_expired;
+static unsigned char g_version_policy;
 
 static void CAN_BootTimeoutStart(unsigned char enabled)
 {
@@ -176,7 +177,8 @@ static const unsigned long g_can_boot_info_values[] =
     APP_IMAGE_MIN_SIZE,
     CAN_BOOT_POLICY_WORD,
     CAN_BOOT_IRQ_ABI,
-    CAN_BOOT_BLOCK_INFO
+    CAN_BOOT_BLOCK_INFO,
+    0UL, 7UL /* Health page reserved in Boot; health/VERIFY/detail capabilities. */
 };
 
 static void CAN_BootSendInfo(unsigned char page, unsigned char status)
@@ -185,7 +187,11 @@ static void CAN_BootSendInfo(unsigned char page, unsigned char status)
     unsigned long image_size;
 
     image_size = 0UL;
-    if (page > CAN_BOOT_INFO_PAGE_BLOCK)
+    if (page == CAN_BOOT_INFO_PAGE_VERSION_POLICY)
+    {
+        value = g_version_policy;
+    }
+    else if (page > CAN_BOOT_INFO_PAGE_DIAGNOSTICS)
     {
         value = 0UL;
         status = CAN_BOOT_STATUS_BAD_SIZE;
@@ -233,6 +239,7 @@ static unsigned char CAN_BootRead(can_frame_t * frame)
 }
 
 #include "can_boot_metadata.inc"
+#include "can_boot_verify.inc"
 #include "can_boot_block.inc"
 
 unsigned char CAN_BootValidateImageManifest(unsigned long * image_size)
@@ -366,6 +373,9 @@ signed long CAN_BootReceive(unsigned long destination,
     started = 0U;
     g_block_bad = 1U;
     MetadataReset();
+    g_version_policy = 0U;
+    if (CAN_BootInstalledValid())
+        g_version_policy = (unsigned char)(1U | (*(__far unsigned char *)(APP_MANIFEST_ADDRESS + CAN_BOOT_VERSION_CONTROL_OFFSET) << 1));
     CAN_BootTimeoutStart(timeout_enabled);
 
     for (;;)
@@ -414,6 +424,16 @@ signed long CAN_BootReceive(unsigned long destination,
                 }
                 continue;
 
+            case CAN_BOOT_CMD_VERIFY:
+                hello_status = CAN_BOOT_STATUS_BAD_STATE;
+                detail = 0U;
+                reply = 0UL;
+                if (started == 0U && frame.DLC == 1U)
+                {
+                    hello_status=VerifyImage((const unsigned long __far *)destination,&manifest_image_size,&reply);
+                }
+                break;
+
             case CAN_BOOT_CMD_METADATA_RESET:
                 hello_status = CAN_BOOT_STATUS_BAD_STATE;
                 if (started == 0U && frame.DLC == 1U)
@@ -448,6 +468,7 @@ signed long CAN_BootReceive(unsigned long destination,
                 break;
 
             case CAN_BOOT_CMD_START:
+            case CAN_BOOT_CMD_FORCE_START:
                 if (frame.DLC != CAN_BOOT_FRAME_DLC)
                 {
                     hello_status = CAN_BOOT_STATUS_BAD_SIZE;
@@ -474,6 +495,12 @@ signed long CAN_BootReceive(unsigned long destination,
                 {
                     detail = 0U;
                     reply = destination;
+                    break;
+                }
+                reply = *(__far unsigned long *)(APP_MANIFEST_ADDRESS + CAN_BOOT_MANIFEST_VERSION_OFFSET);
+                if (!VersionAllowed(g_version_policy, reply, frame.DB[0]))
+                {
+                    hello_status = CAN_BOOT_STATUS_VERSION;
                     break;
                 }
                 image_size = value;

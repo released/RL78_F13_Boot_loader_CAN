@@ -31,6 +31,7 @@ All multi-byte integers are little-endian.
 |---|---|---|
 | `HELLO 0x01` | `[cmd]` | `[cmd,status,protocol,format,target16,capacityKiB16]` |
 | `START 0x02` | `[cmd,protocol,target16,imageSize32]` | common ACK |
+| `FORCE_START 0x0E` | same fields as START; request-local version override | common ACK; all other validation unchanged |
 | `BLOCK_BEGIN 0x0B` | `[cmd,imageOffset24,blockCRC32]` | none |
 | raw block segments | ID720..727, up to8 image bytes | none |
 | `BLOCK_COMMIT 0x0C` | `[cmd,imageOffset24,blockCRC32]` | common ACK |
@@ -41,6 +42,17 @@ All multi-byte integers are little-endian.
 | `METADATA 0x08` | `[cmd,offset16,00,data4]` | ACK next offset / total256 |
 | `SEAL 0x09` | `[cmd,00,00,00,metadataCRC32]` | ACK offset256 / total256 |
 | `METADATA_RESET 0x0A` | `[cmd]` | ACK offset0 / total256; no flash access |
+| `VERIFY 0x0D` | `[cmd]`, Boot with no active update only | `[0D,status,00,00,calculatedCRC32]`; no erase/write |
+
+INFO page1B is the App health word: byte0 READY(1), byte1 clock/CAN/timer bits0..2,
+byte2 Boot-handoff/update bits0..1, byte3 RESF. READY is not merely INFO response.
+INFO1C advertises bit0 health, bit1 Boot VERIFY, bit2 classified error status.
+Boot reports7; App reports1. VERIFY range is App start + installed size from INFO.
+Statuses0A metadata,0B policy/minimum Boot,0C IRQ ABI,0D layout distinguish
+pre-Flash failures;09 remains other BAD_IMAGE cases. Wrong/missing metadata and
+CRC failure never permit VERIFY to report OK or reach erase/write.
+Status0E VERSION_DOWNGRADE rejects an ordinary START before Flash access;
+ACK value is the installed App version. Same/newer versions remain allowed.
 
 The common ACK is `[cmd,status,detail16,value32]`.
 
@@ -79,6 +91,7 @@ ASCII bytes and are concatenated by the tool.
 | `16`, `17` | installed app image size / minimum supported image size |
 | `18`, `19` | policy version/size/role/live transport mask / IRQ ABI |
 | `1A` | high16=raw data base ID; low16=block bytes; current07200040h |
+| `1D` | installed version policy:0=no valid App,1=valid/unrestricted,3=valid/same-or-newer |
 
 The application answers INFO and ENTER. The bootloader answers INFO, HELLO,
 and the update commands. Reading INFO is non-destructive.
@@ -94,7 +107,7 @@ capacity.
 
 | Offset | Size | Field |
 |---:|---:|---|
-| `00` | 4 | magic `CAN3` (`0x334E4143`) |
+| `00` | 4 | magic `CAN\0` (`0x004E4143`) |
 | `04` | 1 | image format `6` (fixed normal RETI IRQ ABI plus common policy) |
 | `05` | 1 | manifest length `128` |
 | `06` | 2 | required flags `0x0003` |
@@ -113,7 +126,10 @@ capacity.
 | `40` | 16 | zero-terminated MCU part ASCII |
 | `50` | 12 | zero-terminated MCU family ASCII |
 | `5C` | 4 | minimum image size |
-| `60..7F` |32 | UPD1:version1,size32,DEVICE_APP,allowed transports,F1V1 IRQ ABI,minimum boot,16 zero bytes |
+| `60..6F` |16 | UPD1:version3,size32,DEVICE_APP,CAN,F1V1 IRQ ABI,minimum Boot |
+| `70..73` |4 | CAN profile:zero (device UART baud) |
+| `74..77` |4 | version_control:0 any version(default),1 same/newer only |
+| `78..7F` |8 | reserved zero |
 | `80..FF` |128 | reserved extension, all0xFF |
 
 Before START, the PC verifies the entire manifest, exact BIN length, non-erased
@@ -146,7 +162,11 @@ application.
 Startup requires non-erased entry, matching header/protocol/target/layout/CAN,
 image516..122880 aligned4, non-erased version, reservedFF and whole-image CRC.
 Boot now also compares exact ASCII family/part and requires initialized build.
-It enforces image minimum boot, but does not enforce application anti-rollback.
+It enforces image minimum Boot. Ordinary START compares App versions only when
+the currently valid installed image enables version control. An incoming lower
+image cannot bypass that check by disabling its own policy. FORCE_START is a
+single transaction, not a persistent unlock, and never bypasses other checks.
+No valid App means recovery without a stored version floor.
 ENTER is a one-shot RAM marker, not a physical P13.7 input. Only sessions
 entered with an already valid app enable the30-second inactivity timer;
 matching ID700 or720..727 standard data traffic refreshes it before command validation.
@@ -158,11 +178,12 @@ complete condition tables, CAN/FSL failure distinctions and diagrams.
 
 Cancellation, disconnect, flash failure, exhausted block retry, or CRC
 failure keeps the bootloader recoverable. The PC performs a bounded best-effort
-ABORT and stops CAN. This product intentionally uses no WDT, digital signature,
-or anti-rollback policy; CRC32 plus target/layout identity is the current
-release integrity policy.
+ABORT and stops CAN. CRC32 plus target/layout identity protects integrity;
+the optional version policy and explicit force operation are not authentication.
+No WDT, digital signature or persistent version floor is provided.
 
-Paired Boot/App1.5.0 retain image format6, F1V1 vector ABI and App start2000h.
-F24 App1.5.0 adds generic burst support; its Boot1.2.0 is unchanged. Reflash the
-F13 pair once; install F24 App through Misc. See the PC docs/CAN_BLOCK_TRANSFER_V5_zh-TW.md
-for the exact Host Link layout, installation order and physical benchmark gates.
+Initial installation programs matching Boot/App images with a programmer.
+Subsequent compatible App updates use CAN. The host must advertise generic
+CAN burst capability; its own App maintenance uses Misc independently.
+See the PC docs/CAN_BLOCK_TRANSFER_V5_zh-TW.md for the Host Link layout and
+physical validation gates. Boot/App release numbers need not be equal.

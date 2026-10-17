@@ -1,0 +1,6 @@
+# Keep only the programming delivery in DefaultBuild.
+/DefaultBuild/*
+!/DefaultBuild/boot0000_1FFF.hex
+/tmp/
+*.mtud
+QualityReport*.txt

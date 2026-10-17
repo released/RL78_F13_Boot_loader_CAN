@@ -99,6 +99,7 @@ void _reset_by_illegal_memory_access(void);
 #define BootSharedWrite32(offset, value) \
     (*((unsigned long __far *)(CAN_BOOT_SHARED_RAM_ADDRESS + (offset))) = (value))
 
+#if CAN_BOOT_DEBUG_UART
 static void BootLogText(const char * text)
 {
     while (*text != '\0')
@@ -122,6 +123,11 @@ static void BootLogCode(const char * label, unsigned char value)
     BootLogHex8(value);
     BootLogText("\r\n");
 }
+#else
+#define BootLogText(text) ((void)0)
+#define BootLogHex8(value) ((void)0)
+#define BootLogCode(label, value) ((void)0)
+#endif
 
 unsigned char Sample_CodeFlashControl_SingleWrite(unsigned long i_u32_start_addr,
                                                       unsigned char __near * inp_u08_write_data)
@@ -173,7 +179,7 @@ unsigned char verify_application_checksum(unsigned long image_size)
     return (CRC_stored == CRC_cal) ? (true) : (false) ;
 }
 
-bool application_is_valid(void)
+unsigned char CAN_BootInstalledValid(void)
 {
     unsigned long image_size;
 
@@ -477,7 +483,9 @@ void boot_R_Systeminit(void)
     // R_CGC_Get_ResetSource();
     boot_R_CGC_Create();
     // boot_R_PORT_Create();
+#if CAN_BOOT_DEBUG_UART
     boot_R_SAU0_Create();
+#endif
     boot_R_TMR_RJ0_Create();    // for timer interrupt
 
     /* Set invalid memory access detection control */
@@ -498,9 +506,12 @@ void boot_hardware_init(void)
     unsigned char clock_status;
 
     clock_status = F13_BoardClockStart();
+    (void)clock_status;
     // const unsigned char indicator[] = "hardware_init";
     EI();   //BSP_EI();
-    boot_R_UART0_Start();         		// UART , P15 , P16
+#if CAN_BOOT_DEBUG_UART
+    boot_R_UART0_Start();
+#endif
     g_can_init_status = CAN_BootInit();   // CAN , P10(CTXD0) , P11(CRXD0)
     BootLogCode("(b)clk=", clock_status);
     BootLogText("(b)X1=4M CPU32 CAN500K EVDD=5V\r\n");
@@ -511,7 +522,7 @@ void boot_hardware_init(void)
     BootSharedWrite32(CAN_BOOT_RAM_HANDOFF_OFFSET, 0UL);
     boot_R_TMR_RJ0_Start();        	    // TIMER  
     
-    application_valid = application_is_valid();
+    application_valid = (CAN_BootInstalledValid() != 0U) ? true : false;
     boot_condition = condition_check(application_valid);
 
 	if(boot_condition)

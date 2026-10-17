@@ -6,37 +6,40 @@ Start with the [RL78 Boot/App porting guide (zh-TW)](https://released.github.io/
 when integrating your own app or designing a different bootloader workflow.
 
 For App metadata/IRQ editing, follow the
-[two-JSON device workshop](https://released.github.io/slide_boot_loader_for_RL78/#device-metadata-vector-workshop).
-App users edit app_image.json and app_irq_handlers.json. App-mode generation
+[C-header device workshop](https://released.github.io/slide_boot_loader_for_RL78/#device-metadata-vector-workshop).
+App users edit app_image_config.h and app_irq_handlers.h. App-mode generation
 owns ftable.inc/identity/vector outputs; it does not rebuild Boot. Clean rebuild
-App after JSON changes; post-build rejects stale linked metadata/vectors.
+App after C header changes; post-build rejects stale linked metadata/vectors.
+Each successful App package also emits DefaultBuild/app_build_report.html:
+actual BIN metadata, all byte addresses, CRC/SHA-256 and full App vector table.
+See the [browser build summary](https://released.github.io/slide_boot_loader_for_RL78/#device-app-build-report).
 
-## Fixed reusable IRQ contract (format6 / boot1.5.0)
+## Fixed reusable IRQ contract
 
 Boot owns all61 normal positions04..7C with generated assembly. App-only IRQ
-additions change only app_irq_handlers.json and a real RETI ISR; INTTRJ0 no
+additions change only app_irq_handlers.h and a real RETI ISR; INTTRJ0 no
 longer calls an ordinary app callback. Reset remains in boot; physical BRK7E
 is not forwarded. Compatible app projects retain the MCU/layout, no-init RAM/
 startup, metadata/CRC and INFO/ENTER contracts. App version/build are app-local.
-Initially install matching format6 boot/app once; old callback-format4 images
-are rejected. See the existing English and Traditional Chinese IRQ guides.
+See the English and Traditional Chinese IRQ guides for initial Boot/App installation.
 The artifact checker requires ROM/FSL below2000 with at least512 spare bytes.
 Build/HEX/model checks do not establish physical IRQ/debug/update acceptance.
 
 Protocol5 requires METADATA_RESET0A,64 ordered METADATA08 chunks and SEAL09
 before START. Complete256-byte metadata is verified in RAM before flash access.
 The128-byte core includes UPD1 DEVICE_APP/CAN policy, F1V1 IRQ ABI and minimum
-boot version. Code still starts at2200. Old format5 images are also rejected.
+boot version. Code starts at2200.
 
 ## Status
 
-First engineering delivery (2026-10-15): user Tool0082 log182253 confirms
-one F13v5 update at Host115200/CAN500K,19244B/CRC CA0DF55C,301 sequential
-block ACKs,10963ms and matching END with zero reported transport/CAN errors.
-The new App's post-reset execution and the physical fault/IRQ matrix remain
-unverified by that log. Freeze Boot/App1.5.0; see the
-[CAN update guide](https://released.github.io/slide_isp_tool_for_RL78/)
-for installation, image selection and validation limits.
+Boot supplies read-only VERIFY, diagnostics capabilities and specific metadata,
+policy, IRQ ABI and partition error statuses. App supplies APP_READY after local
+initialization checks; Tool compares live version/build/size after update.
+Boot UART debug output defaults off (CAN_BOOT_DEBUG_UART); App UART remains.
+The post-build verify_boot_budget.ps1 enforces8KiB Boot and minimum512-byte spare.
+See [confirmation, diagnostics and acceptance](https://released.github.io/slide_isp_tool_for_RL78/#update-confirmation)
+for operating steps and the hardware test matrix. Software models/builds do not
+establish physical high-speed, power-loss or IRQ acceptance.
 
 ## Public examples and checkout layout
 
@@ -106,7 +109,8 @@ and CAN-ready result; the printed 5-V requirement is not a voltage measurement.
 Do not mix this clock baseline with the previous HOCO-only app: initially
 program the newly generated paired `boot_app.hex`, or ensure the app region
 is erased/invalid when testing boot-only recovery. A previous valid app may
-otherwise disable the new boot's inherited X1/PLL. Current paired boot/app versions are1.5.0.
+otherwise change the inherited X1/PLL. Boot and App release identities are independent;
+minimum Boot, IRQ ABI and layout establish compatibility.
 
 For a non-destructive analyzer test use standard ID `0x700`, DLC2, `07 00`;
 expect ID `0x701`, DLC8, INFO page0 with state=bootloader. Do not use the
@@ -131,8 +135,9 @@ Manifest validation also requires format6/core128/flags, protocol/checksum,
 target/CAN mode/ID format,256-byte region with128 reservedFF bytes, image516..
 122880 aligned4, non-erased version, and exact compiled layout/rates/IDs.
 The boot validator also compares ASCII family/part, initialized build, UPD1
-policy, IRQ ABI and minimum boot version. CRC integrity is not authentication
-or anti-rollback.
+policy, IRQ ABI and minimum boot version. CRC integrity is not authentication.
+Installed-App version policy and single-use
+force operation are described in the [Tool operation guide](https://released.github.io/slide_isp_tool_for_RL78/#force-old-version).
 
 With a valid old app and ENTER,30-second inactivity before accepted START may
 return to that app. Matching standard non-RTR ID700/DLC>0 traffic refreshes
@@ -171,6 +176,11 @@ Important outputs:
 | `DefaultBuild\RL78_F13_Boot_loader_CAN.map` | Section-boundary verification |
 | `DefaultBuild\RL78_F13_Boot_loader_CAN.abs` | Debug/load module |
 
+Git distribution retains only `DefaultBuild/boot0000_1FFF.hex`; map/ABS and
+other compiler outputs are regenerated by a build. The Tool's
+[publication workflow](https://github.com/released/simple_renesas_isp_tool/blob/main/docs/GITHUB_PUBLISH_zh-TW.md)
+archives other DefaultBuild outputs locally before commit/push.
+
 For E2 Lite debugging, the project runs to `_boot_main`, not `_main`. The link
 also uses `-OCDTR`, and normal RAM sections start at `0xFE500` so they do not
 overlap the RL78 trace/self RAM area at `0xFE300-0xFE4FF`. See
@@ -202,7 +212,8 @@ Build `..\RL78_F13_Boot_loader_CAN_app` afterward. Send its generated
   reset.
 
 The accepted first-release security boundary is CRC32 integrity only;
-authentication, signatures, anti-rollback, and encryption are out of scope.
+authentication, signatures and encryption are not provided. Version policy is
+an operational guard with an explicit single-update maintenance override.
 Product-specific power-failure and FSL fault validation remain required.
 
 ## Main files

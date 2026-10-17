@@ -388,7 +388,8 @@ C:\Program Files (x86)\Renesas Electronics\CS+\CC\FAA\V1.04.02
       <SetAllBuildModeValue-0>False</SetAllBuildModeValue-0>
       <PreBuildCommands-0>powershell.exe -NoProfile -ExecutionPolicy Bypass -File "generate_irq_contract.ps1" -Mode Boot
 </PreBuildCommands-0>
-      <PostBuildCommands-0 />
+      <PostBuildCommands-0>powershell.exe -NoProfile -ExecutionPolicy Bypass -File "verify_boot_budget.ps1"
+</PostBuildCommands-0>
       <GeneralOptionCpu-0>S3</GeneralOptionCpu-0>
       <GeneralOptionErrorFile-0>False</GeneralOptionErrorFile-0>
       <GeneralOptionMirrorArea-0>Maa0</GeneralOptionMirrorArea-0>

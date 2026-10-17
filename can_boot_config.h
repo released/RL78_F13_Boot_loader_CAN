@@ -105,22 +105,34 @@
 #define CAN_BOOT_INFO_PAGE_UPDATE_POLICY    (0x18U)
 #define CAN_BOOT_INFO_PAGE_IRQ_ABI          (0x19U)
 #define CAN_BOOT_INFO_PAGE_BLOCK            (0x1AU)
+#define CAN_BOOT_INFO_PAGE_HEALTH           (0x1BU)
+#define CAN_BOOT_INFO_PAGE_DIAGNOSTICS      (0x1CU)
+#define CAN_BOOT_CMD_VERIFY                 (0x0DU)
+#define CAN_BOOT_DEBUG_UART                 (0U)
 #define CAN_BOOT_BLOCK_INFO                 (((unsigned long)CAN_BOOT_BLOCK_DATA_ID << 16) | CAN_BOOT_BLOCK_BYTES)
-#define CAN_BOOT_POLICY_WORD                (0x01012001UL)
+#define CAN_BOOT_POLICY_WORD                (0x01012003UL)
+#define CAN_BOOT_CMD_FORCE_START            (0x0EU)
+#define CAN_BOOT_INFO_PAGE_VERSION_POLICY   (0x1DU)
+#define CAN_BOOT_VERSION_CONTROL_OFFSET     (0x74UL)
 #define CAN_BOOT_IRQ_ABI                    (0x31563146UL)
 #define CAN_BOOT_CMD_METADATA               (0x08U)
 #define CAN_BOOT_CMD_SEAL                   (0x09U)
 #define CAN_BOOT_CMD_METADATA_RESET         (0x0AU)
 #define CAN_BOOT_STATE_APPLICATION          (0x01U)
 #define CAN_BOOT_STATE_BOOTLOADER           (0x02U)
-#define CAN_BOOT_FIRMWARE_VERSION            (0x00010500UL)
-#define CAN_BOOT_FIRMWARE_BUILD              (20261015UL)
+/* Boot's own release identity; independent of APP_IMAGE_VERSION/BUILD.
+ * The App producer uses this version as its minimum compatible Boot version.
+ * A loaded App requiring a newer Boot is rejected; build dates need not match.
+ */
+#define CAN_BOOT_FIRMWARE_VERSION            (0x00010700UL)
+#define CAN_BOOT_FIRMWARE_BUILD              (20261017UL)
 
 /* Bounds polling if the CAN peripheral or bus cannot complete a transition. */
 #define CAN_BOOT_CAN_INIT_POLL_LIMIT         (10000UL)
 #define CAN_BOOT_CAN_TX_POLL_LIMIT           (10000UL)
 
-#define CAN_BOOT_MANIFEST_MAGIC             (0x334E4143UL) /* "CAN3" */
+/* ASCII CAN plus NUL:43 41 4E 00; image tag, independent of CAN port/version. */
+#define CAN_BOOT_MANIFEST_MAGIC             (0x004E4143UL) /* "CAN\0" */
 #define CAN_BOOT_MANIFEST_SIZE              (128U)
 /* Reserved Flash extent, independent of the128-byte core and64-byte blocks. */
 #define CAN_BOOT_METADATA_REGION_SIZE       (256U)

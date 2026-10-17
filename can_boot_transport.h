@@ -19,6 +19,12 @@
 #define CAN_BOOT_STATUS_BAD_PROTOCOL (0x07U)
 #define CAN_BOOT_STATUS_BAD_TARGET   (0x08U)
 #define CAN_BOOT_STATUS_BAD_IMAGE    (0x09U)
+#define CAN_BOOT_STATUS_METADATA     (0x0AU)
+#define CAN_BOOT_STATUS_POLICY       (0x0BU)
+#define CAN_BOOT_STATUS_IRQ_ABI      (0x0CU)
+#define CAN_BOOT_STATUS_LAYOUT       (0x0DU)
+#define CAN_BOOT_STATUS_VERSION      (0x0EU)
+unsigned char CAN_BootInstalledValid(void);
 
 #define CAN_BOOT_RESULT_ABORT        (-1L)
 #define CAN_BOOT_RESULT_FLASH_ERROR  (-5L)
