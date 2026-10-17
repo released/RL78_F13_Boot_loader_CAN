@@ -10,6 +10,14 @@ For App metadata/IRQ editing, follow the
 App users edit app_image_config.h and app_irq_handlers.h. App-mode generation
 owns ftable.inc/identity/vector outputs; it does not rebuild Boot. Clean rebuild
 App after C header changes; post-build rejects stale linked metadata/vectors.
+Shared image format/MCU/Flash/policy/Boot identity lives in image_metadata_config.h
+(IMAGE_*); CAN settings live in can_boot_config.h. boot_app_handoff.h owns the
+separate RAM/IRQ-owner contract. Generators combine the same inputs without
+duplicating CAN IDs or metadata values.
+Runtime image_metadata.c/.h is compiled independently by Boot and App.
+image_metadata_profile.c supplies expected fields; CAN staging stays in its
+adapter. See [metadata APIs and porting](https://released.github.io/slide_boot_loader_for_RL78/#device-metadata-parser)
+for word/byte input, diagnostic options and CRC boundaries.
 Each successful App package also emits DefaultBuild/app_build_report.html:
 actual BIN metadata, all byte addresses, CRC/SHA-256 and full App vector table.
 See the [browser build summary](https://released.github.io/slide_boot_loader_for_RL78/#device-app-build-report).
@@ -222,7 +230,11 @@ Product-specific power-failure and FSL fault validation remain required.
 | --- | --- |
 | `r_main.c` | Boot decision, hardware setup and app handoff |
 | `can_boot_transport.c`, `.h` | CAN firmware-update protocol |
-| `can_boot_config.h` | Authoritative CAN IDs, target identity and timeout |
+| `image_metadata_config.h` | Image format, MCU/Flash, policy, IRQ ABI and Boot identity |
+| `image_metadata.c`, `.h` | Independent metadata decode/validation, no CAN driver or Flash writes |
+| `image_metadata_profile.c` | Project-specific expected metadata core |
+| `can_boot_config.h` | CAN IDs, rates, commands, filters and timeout |
+| `boot_app_handoff.h` | No-init RAM, owner markers and handoff signatures |
 | `RSCANconf\` | Renesas RS-CAN Lite driver and 500 kbit/s configuration |
 | `fsl_flash_interface.c`, `.h` | RL78/F13 FSL erase/write wrapper |
 | `sw_crc32.c`, `.h` | Application CRC32 verification |

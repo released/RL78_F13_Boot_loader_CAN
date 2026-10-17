@@ -2,6 +2,9 @@
 #define CAN_BOOT_TRANSPORT_H
 
 #include "can_boot_config.h"
+#include "image_metadata_config.h"
+#include "image_metadata.h"
+#include "boot_app_handoff.h"
 
 #define CAN_BOOT_CMD_HELLO           (0x01U)
 #define CAN_BOOT_CMD_START           (0x02U)
@@ -36,7 +39,6 @@ unsigned char CAN_BootInstalledValid(void);
 
 unsigned char CAN_BootInit(void);
 void CAN_BootTimerTick(void);
-unsigned char CAN_BootValidateImageManifest(unsigned long * image_size);
 signed long CAN_BootReceive(unsigned long destination,
                             unsigned char flash_init_status,
                             unsigned char timeout_enabled);

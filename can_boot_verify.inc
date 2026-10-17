@@ -3,7 +3,7 @@ static unsigned char VerifyImage(const unsigned long __far *image,
                                  unsigned long *size, unsigned long *crc)
 {
     const unsigned long __far *metadata;
-    metadata=image+CAN_BOOT_MANIFEST_OFFSET/4UL;
+    metadata=image+IMAGE_MANIFEST_OFFSET/4UL;
     *size=0UL;
     *crc=0UL;
     if (!MetadataValid(metadata)) return g_metadata_error;

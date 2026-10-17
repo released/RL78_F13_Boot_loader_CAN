@@ -97,7 +97,7 @@ void _reset_by_illegal_memory_access(void);
 
 /* Only constant, aligned contract offsets4/8 are used by internal callers. */
 #define BootSharedWrite32(offset, value) \
-    (*((unsigned long __far *)(CAN_BOOT_SHARED_RAM_ADDRESS + (offset))) = (value))
+    (*((unsigned long __far *)(BOOT_APP_SHARED_RAM_ADDRESS + (offset))) = (value))
 
 #if CAN_BOOT_DEBUG_UART
 static void BootLogText(const char * text)
@@ -190,19 +190,20 @@ unsigned char CAN_BootInstalledValid(void)
     }
 
     image_size = 0UL;
-    if (CAN_BootValidateImageManifest(&image_size) == 0U)
+    if (ImageMetadataValidate((const unsigned long __far *)APP_MANIFEST_ADDRESS) != IMAGE_METADATA_OK)
     {
         BootLogText("(b)manifest\r\n");
         return false;
     }
 
+    image_size = *(__far unsigned long *)(APP_MANIFEST_ADDRESS + IMAGE_MANIFEST_SIZE_OFFSET);
     return verify_application_checksum(image_size);
 }
 
 bool condition_check(bool application_valid)
 {
 	//if boot sign is there, then stay in bootloader
-	if(reset_to_bootloader == CAN_BOOT_RESET_TO_BOOT_SIGNATURE)
+	if(reset_to_bootloader == BOOT_APP_RESET_TO_BOOT_SIGNATURE)
     {        
         BootLogText("(b)requested\r\n");
 
@@ -518,8 +519,8 @@ void boot_hardware_init(void)
     BootLogCode("(b)CAN=", g_can_init_status);
 
     g_app_required_update = false;
-    _no_init_global[RAM_FLAG_INDICATE_BOOT_APP] = CAN_BOOT_RAM_OWNER_BOOT;
-    BootSharedWrite32(CAN_BOOT_RAM_HANDOFF_OFFSET, 0UL);
+    _no_init_global[RAM_FLAG_INDICATE_BOOT_APP] = BOOT_APP_RAM_OWNER_BOOT;
+    BootSharedWrite32(BOOT_APP_RAM_HANDOFF_OFFSET, 0UL);
     boot_R_TMR_RJ0_Start();        	    // TIMER  
     
     application_valid = (CAN_BootInstalledValid() != 0U) ? true : false;
@@ -527,7 +528,7 @@ void boot_hardware_init(void)
 
 	if(boot_condition)
 	{
-        BootSharedWrite32(CAN_BOOT_RAM_UPDATE_OFFSET, 0UL);
+        BootSharedWrite32(BOOT_APP_RAM_UPDATE_OFFSET, 0UL);
         if (g_can_init_status == 0U)
         {
             /* Never return to an invalid application when CAN is unavailable. */
@@ -612,8 +613,8 @@ void boot_main(void)
                 FSL_Close();
                 g_app_required_update = false;
                 BootSharedWrite32(
-                    CAN_BOOT_RAM_UPDATE_OFFSET,
-                    CAN_BOOT_UPDATE_COMPLETE_SIGNATURE);
+                    BOOT_APP_RAM_UPDATE_OFFSET,
+                    BOOT_APP_UPDATE_COMPLETE_SIGNATURE);
                 BootLogText("(b)RST\r\n");
                 
                 _reset_by_illegal_memory_access();
@@ -628,10 +629,10 @@ void boot_main(void)
     BootLogText("(b)leave\r\n");
     DI();
     BootSharedWrite32(
-        CAN_BOOT_RAM_HANDOFF_OFFSET,
-        CAN_BOOT_HANDOFF_SIGNATURE);
+        BOOT_APP_RAM_HANDOFF_OFFSET,
+        BOOT_APP_HANDOFF_SIGNATURE);
     _no_init_global[RAM_FLAG_INDICATE_BOOT_APP] =
-        CAN_BOOT_RAM_OWNER_APPLICATION;
+        BOOT_APP_RAM_OWNER_APPLICATION;
     return;
 
     /* End user code. Do not edit comment generated here */

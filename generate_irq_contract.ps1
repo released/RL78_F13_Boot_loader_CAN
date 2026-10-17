@@ -6,10 +6,13 @@ param(
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'app_config.ps1')
 $utf8 = New-Object System.Text.UTF8Encoding($false)
-$config = [IO.File]::ReadAllText((Join-Path $PSScriptRoot 'can_boot_config.h'))
+$config = (@('image_metadata_config.h','can_boot_config.h','boot_app_handoff.h') |
+    ForEach-Object { [IO.File]::ReadAllText((Join-Path $PSScriptRoot $_)) }) -join "`n"
+$config = [regex]::Replace($config, '(?s)/\*.*?\*/|//[^\r\n]*', '')
 function Macro([string]$name) {
-    $m = [regex]::Match($config, '#define\s+'+$name+'\s+\((0x[0-9A-Fa-f]+|[0-9]+)[UL]*\)')
-    if (!$m.Success) { throw "Missing contract macro $name" }
+    $definitions = [regex]::Matches($config, '(?m)^#define\s+'+[regex]::Escape($name)+'\s+\((0x[0-9A-Fa-f]+|[0-9]+)[UL]*\)[ \t]*\r?$')
+    if ($definitions.Count -ne 1) { throw "Missing or duplicate numeric contract macro $name" }
+    $m = $definitions[0]
     return [Convert]::ToUInt32($m.Groups[1].Value.Replace('0x',''), $(if($m.Groups[1].Value.StartsWith('0x')){16}else{10}))
 }
 function Generated([string]$path,[string]$value) {
@@ -20,9 +23,9 @@ function Generated([string]$path,[string]$value) {
         [IO.File]::WriteAllText($path,$value,$utf8)
     }
 }
-$start = Macro 'CAN_BOOT_APPLICATION_START'
+$start = Macro 'IMAGE_APPLICATION_START'
 if ($start -ne 0x2000) { throw 'This IRQ ABI requires the F13 app table at 0x2000.' }
-if ((Macro 'CAN_BOOT_RAM_OWNER_OFFSET') -ne 0 -or (Macro 'CAN_BOOT_SHARED_RAM_ADDRESS') -ne 0xFF710) {
+if ((Macro 'BOOT_APP_RAM_OWNER_OFFSET') -ne 0 -or (Macro 'BOOT_APP_SHARED_RAM_ADDRESS') -ne 0xFF710) {
     throw 'This IRQ ABI requires the owner byte at 0xFF710.'
 }
 if ($Mode -eq 'Boot') {
@@ -53,9 +56,9 @@ f13_irq_dispatch:
     SHLW AX,1
 '@  # AX is little-endian X(low), A(high).
     $text += "`n"+('    ADDW AX,#0x{0:X4}' -f $start)+"`n"
-    $text += ('    CMP !0x{0:X4},#0x{1:X2}' -f ((Macro 'CAN_BOOT_SHARED_RAM_ADDRESS') -band 0xFFFF),(Macro 'CAN_BOOT_RAM_OWNER_APPLICATION'))+"`n"
+    $text += ('    CMP !0x{0:X4},#0x{1:X2}' -f ((Macro 'BOOT_APP_SHARED_RAM_ADDRESS') -band 0xFFFF),(Macro 'BOOT_APP_RAM_OWNER_APPLICATION'))+"`n"
     $text += "    BZ `$f13_irq_target`n"
-    $text += ('    CMP !0x{0:X4},#0x{1:X2}' -f ((Macro 'CAN_BOOT_SHARED_RAM_ADDRESS') -band 0xFFFF),(Macro 'CAN_BOOT_RAM_OWNER_BOOT'))+"`n"
+    $text += ('    CMP !0x{0:X4},#0x{1:X2}' -f ((Macro 'BOOT_APP_SHARED_RAM_ADDRESS') -band 0xFFFF),(Macro 'BOOT_APP_RAM_OWNER_BOOT'))+"`n"
     $text += "    BNZ `$f13_irq_default`n"
     $text += ('    CMPW AX,#0x{0:X4}' -f ($start+0x1E*2))+"`n"
     $text += @'
@@ -78,36 +81,36 @@ f13_boot_default_isr:
     Generated (Join-Path $PSScriptRoot 'f13_boot_vectors.asm') ($text+"`n")
 } else {
     $AppProject = (Resolve-Path -LiteralPath $AppProject).Path
-    $image = Read-AppImageConfig $AppProject (Macro 'CAN_BOOT_TARGET_ID')
+    $image = Read-AppImageConfig $AppProject (Macro 'IMAGE_TARGET_ID')
     $version = $image.Version
     $equ = [ordered]@{
         FLASH_TABLE = $start
-        INTERRUPT_OFFSET = (Macro 'CAN_BOOT_MANIFEST_OFFSET')
-        APP_MANIFEST_TABLE = ($start + (Macro 'CAN_BOOT_MANIFEST_OFFSET'))
-        IMAGE_MANIFEST_MAGIC = (Macro 'CAN_BOOT_MANIFEST_MAGIC')
-        IMAGE_MANIFEST_FORMAT_INFO = ((Macro 'CAN_BOOT_IMAGE_FORMAT_VERSION') -bor ((Macro 'CAN_BOOT_MANIFEST_SIZE') -shl 8) -bor ((Macro 'CAN_BOOT_MANIFEST_FLAGS') -shl 16))
-        IMAGE_METADATA_REGION_SIZE = (Macro 'CAN_BOOT_METADATA_REGION_SIZE')
-        IMAGE_MANIFEST_PROTOCOL = ((Macro 'CAN_BOOT_PROTOCOL_ID') -bor ((Macro 'CAN_BOOT_PROTOCOL_VERSION') -shl 16) -bor ((Macro 'CAN_BOOT_CHECKSUM_CRC32') -shl 24))
-        IMAGE_MANIFEST_TARGET = ((Macro 'CAN_BOOT_TARGET_ID') -bor ((Macro 'CAN_BOOT_CAN_MODE_CLASSICAL') -shl 16) -bor ((Macro 'CAN_BOOT_CAN_ID_STANDARD') -shl 24))
+        INTERRUPT_OFFSET = (Macro 'IMAGE_MANIFEST_OFFSET')
+        APP_MANIFEST_TABLE = ($start + (Macro 'IMAGE_MANIFEST_OFFSET'))
+        IMAGE_MANIFEST_MAGIC = (Macro 'IMAGE_MANIFEST_MAGIC')
+        IMAGE_MANIFEST_FORMAT_INFO = ((Macro 'IMAGE_FORMAT_VERSION') -bor ((Macro 'IMAGE_MANIFEST_SIZE') -shl 8) -bor ((Macro 'IMAGE_MANIFEST_FLAGS') -shl 16))
+        IMAGE_METADATA_REGION_SIZE = (Macro 'IMAGE_METADATA_REGION_SIZE')
+        IMAGE_MANIFEST_PROTOCOL = ((Macro 'CAN_BOOT_PROTOCOL_ID') -bor ((Macro 'CAN_BOOT_PROTOCOL_VERSION') -shl 16) -bor ((Macro 'IMAGE_CHECKSUM_CRC32') -shl 24))
+        IMAGE_MANIFEST_TARGET = ((Macro 'IMAGE_TARGET_ID') -bor ((Macro 'CAN_BOOT_CAN_MODE_CLASSICAL') -shl 16) -bor ((Macro 'CAN_BOOT_CAN_ID_STANDARD') -shl 24))
         APP_IMAGE_VERSION = $version
         APP_IMAGE_BUILD = [uint32]$image.build
         APP_IMAGE_VERSION_CONTROL = [uint32]$image.VersionControl
         IMAGE_SIZE_POST_BUILD = [uint32]::MaxValue
-        APP_REGION_SIZE = (Macro 'CAN_BOOT_APPLICATION_CAPACITY')
-        CODE_FLASH_SIZE = (Macro 'CAN_BOOT_CODE_FLASH_SIZE')
-        BOOT_RESERVED_SIZE = (Macro 'CAN_BOOT_RESERVED_SIZE')
-        FLASH_ERASE_BLOCK_SIZE = (Macro 'CAN_BOOT_ERASE_BLOCK_SIZE')
+        APP_REGION_SIZE = (Macro 'IMAGE_APPLICATION_CAPACITY')
+        CODE_FLASH_SIZE = (Macro 'IMAGE_CODE_FLASH_SIZE')
+        BOOT_RESERVED_SIZE = (Macro 'IMAGE_RESERVED_SIZE')
+        FLASH_ERASE_BLOCK_SIZE = (Macro 'IMAGE_ERASE_BLOCK_SIZE')
         CAN_NOMINAL_BITRATE_MASK = (Macro 'CAN_BOOT_NOMINAL_500K_MASK')
         CAN_DATA_BITRATE_MASK = (Macro 'CAN_BOOT_DATA_BITRATE_MASK')
         CAN_REQUEST_ID = (Macro 'CAN_BOOT_REQUEST_ID')
         CAN_RESPONSE_ID = (Macro 'CAN_BOOT_RESPONSE_ID')
-        MINIMUM_IMAGE_SIZE = (Macro 'CAN_BOOT_MINIMUM_IMAGE_SIZE')
-        IMAGE_POLICY_WORD = (Macro 'CAN_BOOT_POLICY_WORD')
-        IMAGE_IRQ_ABI = (Macro 'CAN_BOOT_IRQ_ABI')
-        IMAGE_MIN_BOOT_VERSION = (Macro 'CAN_BOOT_FIRMWARE_VERSION')
+        MINIMUM_IMAGE_SIZE = (Macro 'IMAGE_MINIMUM_IMAGE_SIZE')
+        IMAGE_POLICY_WORD = (Macro 'IMAGE_POLICY_WORD')
+        IMAGE_IRQ_ABI = (Macro 'IMAGE_IRQ_ABI')
+        IMAGE_MIN_BOOT_VERSION = (Macro 'IMAGE_BOOT_VERSION')
     }
     foreach ($field in @('PART_0','PART_1','PART_2','PART_3','FAMILY_0','FAMILY_1','FAMILY_2')) {
-        $equ['MCU_'+$field] = Macro ('CAN_BOOT_MCU_'+$field)
+        $equ['MCU_'+$field] = Macro ('IMAGE_MCU_'+$field)
     }
     $table = "; Generated from this App's app_image_config.h and Boot contract. Do not edit.`n"
     foreach ($field in $equ.Keys) {

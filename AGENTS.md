@@ -3,8 +3,18 @@
 Read README.md and the App README before changing metadata/vector tooling.
 F13 and F24 CAN device Boot/App are joint golden samples for future MCU ports.
 Preserve the common authoring/build/validation workflow in both projects.
+Prioritize both MCU device projects before F24 host work; do not modify host
+firmware as part of device metadata/vector changes.
 
 - Users edit app_image_config.h and app_irq_handlers.h in each App.
+- image_metadata_config.h owns neutral IMAGE_* format/MCU/Flash/policy/Boot
+  identity; can_boot_config.h owns CAN only; boot_app_handoff.h owns RAM/owner.
+  Keep explicit independent includes and the three-header build readers aligned.
+- Compile image_metadata.c/.h independently in Boot/App; the local copies
+  match Tool firmware/common/device_metadata via sync_device_metadata.ps1.
+  image_metadata_profile.c owns expected values. Parser has no CAN/Flash API;
+  transport staging and CRC/launch gates stay separate. Keep C90,32-bit word/
+  endian/alignment boundaries, detailed/compact diagnostic acceptance equal.
 - app_config.ps1 is a local identical copy of the common device-header reader.
   No JSON fallback or Python build dependency. Keep parser copies synchronized.
 - Pre-build generates INC/identity/vectors; post-build rejects stale compiled

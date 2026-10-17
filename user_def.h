@@ -26,6 +26,8 @@
 #define __USER_DEF_H__
 
 #include "can_boot_config.h"
+#include "image_metadata_config.h"
+#include "boot_app_handoff.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -146,8 +148,8 @@ extern "C" {
  * Example: if boot grows from 8 KiB to 12 KiB, reserve blocks 0-11 and change
  * APP_FLASH_START from 0x02000 to 0x03000.  Then perform every step below.
  *
- * 1. In can_boot_config.h, change CAN_BOOT_APPLICATION_START,
- *    CAN_BOOT_APPLICATION_CAPACITY, and CAN_BOOT_RESERVED_SIZE as required.
+ * 1. In image_metadata_config.h, change IMAGE_APPLICATION_START,
+ *    IMAGE_APPLICATION_CAPACITY, and IMAGE_RESERVED_SIZE as required.
  *    APP_FLASH_START, BLOCK_APP_BEGIN, and all image-size expressions below
  *    are derived from those authoritative values.
  *
@@ -185,8 +187,8 @@ extern "C" {
  *
  * 4. Update the application manifest values in app/ftable.inc and the CS+
  *    divided HEX input name/range used by generate_update_image.ps1.  Keep
- *    target, layout, CAN, and format identity synchronized with
- *    can_boot_config.h.  Rebuild boot first, then app.  Confirm the
+ *    target/layout/format aligned with image_metadata_config.h and CAN
+ *    settings with can_boot_config.h. Rebuild boot then app. Confirm the
  *    update BIN is no larger than:
  *      FLASH_TOTAL_SIZE - APP_FLASH_START
  *    and that its manifest size equals its actual length.  Independently
@@ -209,18 +211,18 @@ extern "C" {
  * FSL_Init still declares CPU32; never use the F24 flash library here.
  */
 #define FLASH_BLOCK_SHIFT                       (10U)       /* 2^10 = 1024 */
-#define FLASH_TOTAL_SIZE                        CAN_BOOT_CODE_FLASH_SIZE
+#define FLASH_TOTAL_SIZE                        IMAGE_CODE_FLASH_SIZE
 #define FLASH_TOTAL_BLOCKS                      (FLASH_TOTAL_SIZE / FLASH_BYTE_PER_BLOCK)
 #define FLASH_END_ADDRESS                       (FLASH_TOTAL_SIZE - 1UL)
 
-#define APP_FLASH_START                         CAN_BOOT_APPLICATION_START
+#define APP_FLASH_START                         IMAGE_APPLICATION_START
 #define APP_JUMP_TABLE_SIZE                     (0x00100UL)
 #define APP_EXTENSION_TABLE_SIZE                (0x00100UL)
-#define APP_MANIFEST_ADDRESS                    (APP_FLASH_START + CAN_BOOT_MANIFEST_OFFSET)
+#define APP_MANIFEST_ADDRESS                    (APP_FLASH_START + IMAGE_MANIFEST_OFFSET)
 #define APP_CODE_START                          (APP_FLASH_START + APP_JUMP_TABLE_SIZE + APP_EXTENSION_TABLE_SIZE)
 #define APP_CRC_SIZE                            (4UL)
-#define APP_IMAGE_MIN_SIZE                      CAN_BOOT_MINIMUM_IMAGE_SIZE
-#define FLASH_UPDATE_MAX_SIZE                   CAN_BOOT_APPLICATION_CAPACITY
+#define APP_IMAGE_MIN_SIZE                      IMAGE_MINIMUM_IMAGE_SIZE
+#define FLASH_UPDATE_MAX_SIZE                   IMAGE_APPLICATION_CAPACITY
 
 /*
  * Relocated application entries are four bytes wide while the physical RL78

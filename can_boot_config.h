@@ -1,81 +1,30 @@
 #ifndef CAN_BOOT_CONFIG_H
 #define CAN_BOOT_CONFIG_H
 
-/*
- * CAN boot protocol configuration shared by the boot transport and the
- * RS-CAN Lite acceptance rule. The application includes this authoritative
- * contract; its local IRQ handler mapping never changes the boot image.
+/* CAN transport configuration shared by Boot and App.
+ * IDs/rates describe the compiled update interface; changing a label does not
+ * reconfigure peripheral registers. Keep driver timing and Tool profile aligned.
+ * Image format/MCU/Flash/policy are in image_metadata_config.h.
+ * RAM handoff/IRQ owner markers are in boot_app_handoff.h.
  */
 #define CAN_BOOT_REQUEST_ID                 (0x700U)
 #define CAN_BOOT_RESPONSE_ID                (0x701U)
-
 #define CAN_BOOT_PROTOCOL_ID                (0x0001U)
 #define CAN_BOOT_PROTOCOL_VERSION           (0x05U)
 #define CAN_BOOT_BLOCK_BYTES                (64U)
 #define CAN_BOOT_BLOCK_DATA_ID              (0x720U)
 #define CAN_BOOT_CMD_BLOCK_BEGIN            (0x0BU)
 #define CAN_BOOT_CMD_BLOCK_COMMIT           (0x0CU)
-#define CAN_BOOT_IMAGE_FORMAT_VERSION       (0x06U)
-#define CAN_BOOT_TARGET_ID                  (0xF13BU)
-#define CAN_BOOT_APPLICATION_START          (0x02000UL)
-#define CAN_BOOT_APPLICATION_CAPACITY       (0x1E000UL)
-#define CAN_BOOT_CODE_FLASH_SIZE            (0x20000UL)
-#define CAN_BOOT_RESERVED_SIZE              (0x02000UL)
-#define CAN_BOOT_ERASE_BLOCK_SIZE           (0x00400UL)
-#define CAN_BOOT_MANIFEST_OFFSET             (0x00100UL)
-#define CAN_BOOT_MINIMUM_IMAGE_SIZE          (0x00204UL)
-
-/*
- * Boot/app no-init RAM contract at 0xFF710.  The owner byte selects the
- * shared ISR destination.  The two signatures are one-shot launch evidence:
- * the bootloader writes HANDOFF immediately before returning to the app and
- * writes UPDATE_COMPLETE only after a successful CAN programming operation.
- * The app consumes and clears both signatures during startup.
+/* Compiled CAN capabilities. Nominal bit2=500 kbit/s; no FD data phase.
+ * Keep actual peripheral clock/timing and the App ENTER path aligned.
  */
-#define CAN_BOOT_SHARED_RAM_ADDRESS          (0x000FF710UL)
-#define CAN_BOOT_SHARED_RAM_SIZE             (16U)
-#define CAN_BOOT_RAM_OWNER_OFFSET            (0U)
-#define CAN_BOOT_RAM_HANDOFF_OFFSET          (4U)
-#define CAN_BOOT_RAM_UPDATE_OFFSET           (8U)
-#define CAN_BOOT_RAM_OWNER_BOOT              (0xAAU)
-#define CAN_BOOT_RAM_OWNER_APPLICATION       (0x55U)
-#define CAN_BOOT_HANDOFF_SIGNATURE           (0x46444E48UL) /* "HNDF" */
-#define CAN_BOOT_UPDATE_COMPLETE_SIGNATURE   (0x44505543UL) /* "CUPD" */
-#define CAN_BOOT_RESET_TO_BOOT_SIGNATURE     (0xAA55AA55UL)
-
-/*
- * APPLICATION_CAPACITY is a limit, not an image-size requirement.  The app
- * post-build writes its map-derived actual length into the manifest and puts
- * CRC32 in the final four bytes of that actual image.  A 60-KiB or 110-KiB
- * image is therefore valid when it fits this device geometry and all metadata
- * matches.  When repartitioning flash, change boot config, app ftable/linker
- * sections, CS+ divided-output range, and INFO/manifest declarations together.
- * Never accept a PC override as permission to program a different address.
- */
-
-/* CAN Upgrade v5 transport; image format6 and fixed IRQ ABI are unchanged. */
-#define CAN_BOOT_CHECKSUM_CRC32              (0x01U)
 #define CAN_BOOT_CAN_MODE_CLASSICAL          (0x01U)
 #define CAN_BOOT_CAN_ID_STANDARD             (0x00U)
 #define CAN_BOOT_NOMINAL_500K_MASK           (0x00000004UL)
 #define CAN_BOOT_DATA_BITRATE_MASK           (0x00000000UL)
-
-/* Little-endian ASCII: "R5F10BMG" and "RL78/F13". */
-#define CAN_BOOT_MCU_PART_0                  (0x31463552UL)
-#define CAN_BOOT_MCU_PART_1                  (0x474D4230UL)
-#define CAN_BOOT_MCU_PART_2                  (0x00000000UL)
-#define CAN_BOOT_MCU_PART_3                  (0x00000000UL)
-#define CAN_BOOT_MCU_FAMILY_0                (0x38374C52UL)
-#define CAN_BOOT_MCU_FAMILY_1                (0x3331462FUL)
-#define CAN_BOOT_MCU_FAMILY_2                (0x00000000UL)
-
-/*
- * Non-destructive INFO identity.  The request is [0x07, page] and the
- * eight-byte response is [0x07, status, page, state, value32 little-endian].
- * Page 0 packs target ID, protocol version, and image format in value32.
- * Pages expose the complete device metadata needed by a generic PC tool.
- * The app generates its own identity header from its ftable.inc. Boot reads
- * the installed app version/build from validated metadata, not a boot constant.
+/* INFO request [07,page]; reply [07,status,page,state,LE32 value].
+ * Page identifiers belong to the wire protocol; their image values come from
+ * image_metadata_config.h or the validated installed App.
  */
 #define CAN_BOOT_CMD_INFO                   (0x07U)
 #define CAN_BOOT_INFO_PAGE_CORE             (0x00U)
@@ -110,69 +59,19 @@
 #define CAN_BOOT_CMD_VERIFY                 (0x0DU)
 #define CAN_BOOT_DEBUG_UART                 (0U)
 #define CAN_BOOT_BLOCK_INFO                 (((unsigned long)CAN_BOOT_BLOCK_DATA_ID << 16) | CAN_BOOT_BLOCK_BYTES)
-#define CAN_BOOT_POLICY_WORD                (0x01012003UL)
+/* FORCE_START applies to one transaction; no persistent unlock is stored. */
 #define CAN_BOOT_CMD_FORCE_START            (0x0EU)
 #define CAN_BOOT_INFO_PAGE_VERSION_POLICY   (0x1DU)
-#define CAN_BOOT_VERSION_CONTROL_OFFSET     (0x74UL)
-#define CAN_BOOT_IRQ_ABI                    (0x31563146UL)
 #define CAN_BOOT_CMD_METADATA               (0x08U)
 #define CAN_BOOT_CMD_SEAL                   (0x09U)
 #define CAN_BOOT_CMD_METADATA_RESET         (0x0AU)
 #define CAN_BOOT_STATE_APPLICATION          (0x01U)
 #define CAN_BOOT_STATE_BOOTLOADER           (0x02U)
-/* Boot's own release identity; independent of APP_IMAGE_VERSION/BUILD.
- * The App producer uses this version as its minimum compatible Boot version.
- * A loaded App requiring a newer Boot is rejected; build dates need not match.
- */
-#define CAN_BOOT_FIRMWARE_VERSION            (0x00010700UL)
-#define CAN_BOOT_FIRMWARE_BUILD              (20261017UL)
-
-/* Bounds polling if the CAN peripheral or bus cannot complete a transition. */
+/* Bounded CAN polling; inactivity uses the 1-ms timer while Flash is idle. */
 #define CAN_BOOT_CAN_INIT_POLL_LIMIT         (10000UL)
 #define CAN_BOOT_CAN_TX_POLL_LIMIT           (10000UL)
-
-/* ASCII CAN plus NUL:43 41 4E 00; image tag, independent of CAN port/version. */
-#define CAN_BOOT_MANIFEST_MAGIC             (0x004E4143UL) /* "CAN\0" */
-#define CAN_BOOT_MANIFEST_SIZE              (128U)
-/* Reserved Flash extent, independent of the128-byte core and64-byte blocks. */
-#define CAN_BOOT_METADATA_REGION_SIZE       (256U)
-#define CAN_BOOT_MANIFEST_FLAGS             (0x0003U)
-#define CAN_BOOT_MANIFEST_FORMAT_WORD       \
-    ((unsigned long)CAN_BOOT_IMAGE_FORMAT_VERSION | \
-     ((unsigned long)CAN_BOOT_MANIFEST_SIZE << 8) | \
-     ((unsigned long)CAN_BOOT_MANIFEST_FLAGS << 16))
-#define CAN_BOOT_MANIFEST_PROTOCOL_WORD     \
-    ((unsigned long)CAN_BOOT_PROTOCOL_ID | \
-     ((unsigned long)CAN_BOOT_PROTOCOL_VERSION << 16) | \
-     ((unsigned long)CAN_BOOT_CHECKSUM_CRC32 << 24))
-#define CAN_BOOT_MANIFEST_TARGET_WORD       \
-    ((unsigned long)CAN_BOOT_TARGET_ID | \
-     ((unsigned long)CAN_BOOT_CAN_MODE_CLASSICAL << 16) | \
-     ((unsigned long)CAN_BOOT_CAN_ID_STANDARD << 24))
-
-#define CAN_BOOT_MANIFEST_FORMAT_OFFSET      (0x04UL)
-#define CAN_BOOT_MANIFEST_PROTOCOL_OFFSET    (0x08UL)
-#define CAN_BOOT_MANIFEST_TARGET_OFFSET      (0x0CUL)
-#define CAN_BOOT_MANIFEST_VERSION_OFFSET     (0x10UL)
-#define CAN_BOOT_MANIFEST_BUILD_OFFSET       (0x14UL)
-#define CAN_BOOT_MANIFEST_SIZE_OFFSET        (0x18UL)
-#define CAN_BOOT_MANIFEST_APP_START_OFFSET   (0x1CUL)
-#define CAN_BOOT_MANIFEST_CAPACITY_OFFSET    (0x20UL)
-#define CAN_BOOT_MANIFEST_CODE_FLASH_OFFSET  (0x24UL)
-#define CAN_BOOT_MANIFEST_BOOT_SIZE_OFFSET   (0x28UL)
-#define CAN_BOOT_MANIFEST_ERASE_SIZE_OFFSET  (0x2CUL)
-#define CAN_BOOT_MANIFEST_NOMINAL_OFFSET     (0x30UL)
-#define CAN_BOOT_MANIFEST_DATA_OFFSET        (0x34UL)
-#define CAN_BOOT_MANIFEST_REQUEST_ID_OFFSET  (0x38UL)
-#define CAN_BOOT_MANIFEST_RESPONSE_ID_OFFSET (0x3CUL)
-#define CAN_BOOT_MANIFEST_PART_OFFSET        (0x40UL)
-#define CAN_BOOT_MANIFEST_FAMILY_OFFSET      (0x50UL)
-#define CAN_BOOT_MANIFEST_MIN_SIZE_OFFSET    (0x5CUL)
-
-/* Timeout advances from the 1-ms TMRJ0 interrupt while flash is idle. */
 #define CAN_BOOT_INACTIVITY_TIMEOUT_MS       (30000U)
-
-/* Receive only standard data frames sent to CAN_BOOT_REQUEST_ID. */
+/* Receive standard data frames on the configured control request ID. */
 #define CAN_BOOT_RX_RULE_ID_LOW              (CAN_BOOT_REQUEST_ID)
 #define CAN_BOOT_RX_RULE_ID_HIGH             (0x0000U)
 #define CAN_BOOT_RX_RULE_MASK_LOW            (0x07FFU)

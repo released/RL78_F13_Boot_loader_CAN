@@ -140,43 +140,43 @@ static void CAN_BootSend(unsigned char command, unsigned char status,
 static void CAN_BootSendHello(unsigned char status)
 {
     CAN_BootSend(CAN_BOOT_CMD_HELLO, status,
-        (unsigned short)CAN_BOOT_PROTOCOL_VERSION | ((unsigned short)CAN_BOOT_IMAGE_FORMAT_VERSION << 8),
-        (unsigned long)CAN_BOOT_TARGET_ID | ((unsigned long)CAN_BOOT_CAPACITY_KIB << 16));
+        (unsigned short)CAN_BOOT_PROTOCOL_VERSION | ((unsigned short)IMAGE_FORMAT_VERSION << 8),
+        (unsigned long)IMAGE_TARGET_ID | ((unsigned long)CAN_BOOT_CAPACITY_KIB << 16));
 }
 
 static const unsigned long g_can_boot_info_values[] =
 {
-    (unsigned long)CAN_BOOT_TARGET_ID |
+    (unsigned long)IMAGE_TARGET_ID |
         ((unsigned long)CAN_BOOT_PROTOCOL_VERSION << 16) |
-        ((unsigned long)CAN_BOOT_IMAGE_FORMAT_VERSION << 24),
-    CAN_BOOT_FIRMWARE_VERSION,
-    CAN_BOOT_FIRMWARE_BUILD,
+        ((unsigned long)IMAGE_FORMAT_VERSION << 24),
+    IMAGE_BOOT_VERSION,
+    IMAGE_BOOT_BUILD,
     0xFFFFFFFFUL,
     0xFFFFFFFFUL,
     APP_FLASH_START,
     FLASH_UPDATE_MAX_SIZE,
     FLASH_TOTAL_SIZE,
-    CAN_BOOT_RESERVED_SIZE,
+    IMAGE_RESERVED_SIZE,
     FLASH_BYTE_PER_BLOCK,
     (unsigned long)CAN_BOOT_CAN_MODE_CLASSICAL |
         ((unsigned long)CAN_BOOT_CAN_ID_STANDARD << 8) |
-        ((unsigned long)CAN_BOOT_CHECKSUM_CRC32 << 16) |
+        ((unsigned long)IMAGE_CHECKSUM_CRC32 << 16) |
         ((unsigned long)CAN_BOOT_PROTOCOL_ID << 24),
     CAN_BOOT_NOMINAL_500K_MASK,
     CAN_BOOT_DATA_BITRATE_MASK,
     CAN_BOOT_REQUEST_ID,
     CAN_BOOT_RESPONSE_ID,
-    CAN_BOOT_MCU_PART_0,
-    CAN_BOOT_MCU_PART_1,
-    CAN_BOOT_MCU_PART_2,
-    CAN_BOOT_MCU_PART_3,
-    CAN_BOOT_MCU_FAMILY_0,
-    CAN_BOOT_MCU_FAMILY_1,
-    CAN_BOOT_MCU_FAMILY_2,
+    IMAGE_MCU_PART_0,
+    IMAGE_MCU_PART_1,
+    IMAGE_MCU_PART_2,
+    IMAGE_MCU_PART_3,
+    IMAGE_MCU_FAMILY_0,
+    IMAGE_MCU_FAMILY_1,
+    IMAGE_MCU_FAMILY_2,
     0xFFFFFFFFUL,
     APP_IMAGE_MIN_SIZE,
-    CAN_BOOT_POLICY_WORD,
-    CAN_BOOT_IRQ_ABI,
+    IMAGE_POLICY_WORD,
+    IMAGE_IRQ_ABI,
     CAN_BOOT_BLOCK_INFO,
     0UL, 7UL /* Health page reserved in Boot; health/VERIFY/detail capabilities. */
 };
@@ -184,9 +184,7 @@ static const unsigned long g_can_boot_info_values[] =
 static void CAN_BootSendInfo(unsigned char page, unsigned char status)
 {
     unsigned long value;
-    unsigned long image_size;
 
-    image_size = 0UL;
     if (page == CAN_BOOT_INFO_PAGE_VERSION_POLICY)
     {
         value = g_version_policy;
@@ -202,14 +200,14 @@ static void CAN_BootSendInfo(unsigned char page, unsigned char status)
         if (((page == CAN_BOOT_INFO_PAGE_APP_VERSION) ||
              (page == CAN_BOOT_INFO_PAGE_APP_BUILD) ||
              (page == CAN_BOOT_INFO_PAGE_APP_IMAGE_SIZE)) &&
-            (CAN_BootValidateImageManifest(&image_size) != 0U))
+            (ImageMetadataValidate((const unsigned long __far *)APP_MANIFEST_ADDRESS) == IMAGE_METADATA_OK))
         {
             value = *(__far unsigned long *)(APP_MANIFEST_ADDRESS +
                 ((page == CAN_BOOT_INFO_PAGE_APP_IMAGE_SIZE) ?
-                    CAN_BOOT_MANIFEST_SIZE_OFFSET :
+                    IMAGE_MANIFEST_SIZE_OFFSET :
                  (page == CAN_BOOT_INFO_PAGE_APP_VERSION) ?
-                    CAN_BOOT_MANIFEST_VERSION_OFFSET :
-                    CAN_BOOT_MANIFEST_BUILD_OFFSET));
+                    IMAGE_MANIFEST_VERSION_OFFSET :
+                    IMAGE_MANIFEST_BUILD_OFFSET));
         }
     }
 
@@ -241,15 +239,6 @@ static unsigned char CAN_BootRead(can_frame_t * frame)
 #include "can_boot_metadata.inc"
 #include "can_boot_verify.inc"
 #include "can_boot_block.inc"
-
-unsigned char CAN_BootValidateImageManifest(unsigned long * image_size)
-{
-    if (image_size != 0)
-    {
-        *image_size = *(__far unsigned long *)(APP_MANIFEST_ADDRESS + 24UL);
-    }
-    return MetadataValid((const unsigned long __far *)APP_MANIFEST_ADDRESS);
-}
 
 static signed long CAN_BootWrite(unsigned long address,
                                  unsigned char __near * data)
@@ -375,7 +364,7 @@ signed long CAN_BootReceive(unsigned long destination,
     MetadataReset();
     g_version_policy = 0U;
     if (CAN_BootInstalledValid())
-        g_version_policy = (unsigned char)(1U | (*(__far unsigned char *)(APP_MANIFEST_ADDRESS + CAN_BOOT_VERSION_CONTROL_OFFSET) << 1));
+        g_version_policy = (unsigned char)(1U | (*(__far unsigned char *)(APP_MANIFEST_ADDRESS + IMAGE_VERSION_CONTROL_OFFSET) << 1));
     CAN_BootTimeoutStart(timeout_enabled);
 
     for (;;)
@@ -477,10 +466,10 @@ signed long CAN_BootReceive(unsigned long destination,
                 }
                 target_id = (unsigned short)frame.DB[2] |
                             ((unsigned short)frame.DB[3] << 8);
-                if (target_id != CAN_BOOT_TARGET_ID || frame.DB[1] != CAN_BOOT_PROTOCOL_VERSION)
+                if (target_id != IMAGE_TARGET_ID || frame.DB[1] != CAN_BOOT_PROTOCOL_VERSION)
                 {
                     hello_status = CAN_BOOT_STATUS_BAD_TARGET;
-                    reply = CAN_BOOT_TARGET_ID;
+                    reply = IMAGE_TARGET_ID;
                     break;
                 }
                 value = FrameValue(&frame);
@@ -497,7 +486,7 @@ signed long CAN_BootReceive(unsigned long destination,
                     reply = destination;
                     break;
                 }
-                reply = *(__far unsigned long *)(APP_MANIFEST_ADDRESS + CAN_BOOT_MANIFEST_VERSION_OFFSET);
+                reply = *(__far unsigned long *)(APP_MANIFEST_ADDRESS + IMAGE_MANIFEST_VERSION_OFFSET);
                 if (!VersionAllowed(g_version_policy, reply, frame.DB[0]))
                 {
                     hello_status = CAN_BOOT_STATUS_VERSION;
@@ -581,8 +570,8 @@ block_done:
                     hello_status = CAN_BOOT_STATUS_BAD_SIZE;
                     break;
                 }
-                manifest_image_size = 0UL;
-                if ((CAN_BootValidateImageManifest(&manifest_image_size) == 0U) ||
+                manifest_image_size = *(__far unsigned long *)(APP_MANIFEST_ADDRESS + IMAGE_MANIFEST_SIZE_OFFSET);
+                if ((ImageMetadataValidate((const unsigned long __far *)APP_MANIFEST_ADDRESS) != IMAGE_METADATA_OK) ||
                     (manifest_image_size != image_size))
                 {
                     hello_status = CAN_BOOT_STATUS_BAD_IMAGE;
