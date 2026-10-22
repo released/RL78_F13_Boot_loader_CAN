@@ -8,6 +8,12 @@
   <Project Name="RL78_F13_Boot_loader_CAN" Type="Application">
     <Files>
       <Path>stkinit.asm</Path>
+      <Path>image_metadata.c</Path>
+      <Path>image_metadata.h</Path>
+      <Path>image_metadata_profile.c</Path>
+      <Path>image_metadata_config.h</Path>
+      <Path>can_boot_config.h</Path>
+      <Path>boot_app_handoff.h</Path>
       <Path>iodefine.h</Path>
       <Category Name="Code Generator">
         <Path>src\code_gen\r_main.c</Path>
@@ -59,6 +65,8 @@
           <Path>DefaultBuild\fsl_flash_interface.obj</Path>
           <Path>DefaultBuild\f13_board_support.obj</Path>
           <Path>DefaultBuild\f13_boot_vectors.obj</Path>
+          <Path>DefaultBuild\image_metadata.obj</Path>
+          <Path>DefaultBuild\image_metadata_profile.obj</Path>
           <Path>FSL\lib\fsl.lib</Path>
         </LinkOrder>
         <CommonOptions>
@@ -70,6 +78,8 @@
         <GeneralOptions>
           <CommandsBefore>powershell.exe -NoProfile -ExecutionPolicy Bypass -File "generate_irq_contract.ps1" -Mode Boot
 </CommandsBefore>
+          <CommandsAfter>powershell.exe -NoProfile -ExecutionPolicy Bypass -File "verify_boot_budget.ps1"
+</CommandsAfter>
           <SimultaneouslyBuild>False</SimultaneouslyBuild>
         </GeneralOptions>
         <CompileOptions>

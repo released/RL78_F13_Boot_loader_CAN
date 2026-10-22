@@ -34,3 +34,9 @@ firmware as part of device metadata/vector changes.
 - Handwritten embedded C90, block-start declarations and English comments.
 - Hardware/COM/power tests need a board and explicit scope; report NOT RUN.
 - Sync the device MD/web/PDF and engineering verification after changes.
+- Default device layouts protect the final 1-KiB erase block: F13 App119KiB,
+  F24 App247KiB. Full120/248KiB profiles require paired contract changes and
+  RFP-only Boot installation, not CS+ Debug download; keep the public warning.
+- CRC byte traversal must use 32-bit integer address arithmetic before a far
+  pointer cast; CC-RL pointer increments wrap at 64 KiB. Run the shared
+  test_device_crc_boundary.ps1 native and target-assembly guards after edits.

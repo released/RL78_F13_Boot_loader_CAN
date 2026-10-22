@@ -54,6 +54,14 @@ uint8_t flash_erase_app_area(unsigned long i_u32_start_addr)
 	uint8_t     fsl_status = FSL_ERR_PARAMETER;
 	uint16_t    l_u16_block_number;
 
+    /* Reject Boot, protected tail and partial erase blocks before FSL access. */
+    if ((i_u32_start_addr < APP_FLASH_START) ||
+        (i_u32_start_addr > (FLASH_END_ADDRESS - FLASH_BYTE_PER_BLOCK + 1UL)) ||
+        ((i_u32_start_addr & (FLASH_BYTE_PER_BLOCK - 1UL)) != 0UL))
+    {
+        return FSL_ERR_PARAMETER;
+    }
+
     /* This expression (actual block number) never exceeds the range of casting uint16_t */
     l_u16_block_number          = (uint16_t)(i_u32_start_addr >> SAMPLE_VALUE_U08_SHIFT_ADDR_TO_BLOCK_CF);
 
@@ -105,6 +113,14 @@ uint8_t flash_erase_app_area(unsigned long i_u32_start_addr)
 uint8_t flash_write_packet_data(uint32_t addr, uint8_t data[], uint16_t size)
 {
 	uint8_t     fsl_status = FSL_ERR_PARAMETER;
+
+    /* This wrapper writes one aligned four-byte word per call. */
+    (void)size;
+    if ((data == 0) || (addr < APP_FLASH_START) ||
+        (addr > (FLASH_END_ADDRESS - 3UL)) || ((addr & 3UL) != 0UL))
+    {
+        return FSL_ERR_PARAMETER;
+    }
 
 	/* Setup data handler for write */
     fsl_write_str.fsl_data_buffer_p_u08 = (__near fsl_u08 *) data;

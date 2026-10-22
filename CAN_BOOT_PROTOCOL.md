@@ -13,7 +13,8 @@ application start of `0x2000`.
 | Code flash | `0x20000` bytes |
 | Boot reserved region | `0x2000` bytes |
 | Application start | `0x2000` |
-| Application capacity | `0x1E000` bytes |
+| Application capacity | `0x1DC00` bytes (119 KiB, including vectors/metadata/CRC) |
+| Protected Flash tail | `0x1FC00..0x1FFFF`, one 1-KiB erase block |
 | Erase block | `0x400` bytes |
 | CAN | Classical CAN 500 kbit/s |
 | Request / response ID | `0x700` / `0x701`, standard data frame |
@@ -22,6 +23,10 @@ application start of `0x2000`.
 These are metadata values for this build, not global PC-tool limits. A future
 target may use a different aligned start, capacity, flash size, CAN ID, or MCU
 identity while retaining the v5 contract and compatible IRQ ABI.
+
+The updater never erases/programs the protected tail, including the CS+ debug
+monitor. See [Boot installation and monitor protection](https://released.github.io/slide_boot_loader_for_RL78/#device-debug-monitor)
+for CS+/RFP installation and full-capacity RFP-only engineering profiles.
 
 ## Commands
 

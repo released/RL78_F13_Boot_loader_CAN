@@ -110,9 +110,10 @@ extern "C" {
  *   0x02100-0x021FF     8           256 bytes  Metadata region (format6)
  *   0x02100-0x0217F     8           128 bytes  Core plus common update policy
  *   0x02180-0x021FF     8           128 bytes  Metadata extensions (0xFF)
- *   0x02200-actual end  8-127       Variable    Application code/padding
- *   final four bytes    8-127       4 bytes     Application CRC32
- *   after image end     8-127       Variable    Erased (0xFF), not in image
+ *   0x02200-actual end  8-126       Variable    Application code/padding
+ *   final four bytes    8-126       4 bytes     Application CRC32
+ *   after image end     8-126       Variable    Outside the image
+ *   0x1FC00-0x1FFFF     127         1 KiB      Protected debug-monitor block
  *
  * FLASH_AREA is both the first application address and the first address that
  * the CAN updater may erase/write.  FLASH_TABLE is the relocated reset and
@@ -190,7 +191,7 @@ extern "C" {
  *    target/layout/format aligned with image_metadata_config.h and CAN
  *    settings with can_boot_config.h. Rebuild boot then app. Confirm the
  *    update BIN is no larger than:
- *      FLASH_TOTAL_SIZE - APP_FLASH_START
+ *      FLASH_UPDATE_MAX_SIZE
  *    and that its manifest size equals its actual length.  Independently
  *    confirm the CRC32 stored in the final four bytes.
  *
@@ -213,7 +214,7 @@ extern "C" {
 #define FLASH_BLOCK_SHIFT                       (10U)       /* 2^10 = 1024 */
 #define FLASH_TOTAL_SIZE                        IMAGE_CODE_FLASH_SIZE
 #define FLASH_TOTAL_BLOCKS                      (FLASH_TOTAL_SIZE / FLASH_BYTE_PER_BLOCK)
-#define FLASH_END_ADDRESS                       (FLASH_TOTAL_SIZE - 1UL)
+#define FLASH_END_ADDRESS                       (IMAGE_APPLICATION_START + IMAGE_APPLICATION_CAPACITY - 1UL)
 
 #define APP_FLASH_START                         IMAGE_APPLICATION_START
 #define APP_JUMP_TABLE_SIZE                     (0x00100UL)
@@ -233,7 +234,7 @@ extern "C" {
     (APP_FLASH_START + ((unsigned long)(vector_address) * 2UL))
 
 #define BLOCK_APP_BEGIN                         (APP_FLASH_START / FLASH_BYTE_PER_BLOCK)
-#define BLOCK_APP_END                           (FLASH_TOTAL_BLOCKS - 1UL)
+#define BLOCK_APP_END                           (FLASH_END_ADDRESS / FLASH_BYTE_PER_BLOCK)
 
 /* Compatibility names used by the existing boot code and FSL wrapper. */
 #define FLASH_END_BLOCK                         FLASH_TOTAL_BLOCKS
@@ -252,6 +253,10 @@ extern "C" {
 
 #if ((APP_FLASH_START + FLASH_UPDATE_MAX_SIZE) > FLASH_TOTAL_SIZE)
 #error The configured application update region exceeds code flash.
+#endif
+
+#if ((FLASH_UPDATE_MAX_SIZE % FLASH_BYTE_PER_BLOCK) != 0UL)
+#error The application capacity must preserve complete FSL erase blocks.
 #endif
 
 // #define TARGET_DEVICE_NOA                       ( 1 )       // Number of recordable areas (user area in code flash, data flash)

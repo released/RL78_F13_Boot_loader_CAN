@@ -61,7 +61,12 @@
  */
 #define IMAGE_TARGET_ID                  (0xF13BU)
 #define IMAGE_APPLICATION_START          (0x02000UL)
-#define IMAGE_APPLICATION_CAPACITY       (0x1E000UL)
+/* Protect the final 1-KiB erase block, including the CS+ debug monitor.
+ * App image (vectors, metadata, code and CRC): 0x02000..0x1FBFF, 119 KiB.
+ * Full 120-KiB engineering profiles require matching Boot/App metadata and
+ * RFP installation of Boot; a CS+ debug download inserts a Flash monitor.
+ */
+#define IMAGE_APPLICATION_CAPACITY       (0x1DC00UL)
 #define IMAGE_CODE_FLASH_SIZE            (0x20000UL)
 #define IMAGE_RESERVED_SIZE              (0x02000UL)
 #define IMAGE_ERASE_BLOCK_SIZE           (0x00400UL)
@@ -93,7 +98,7 @@
  * The producer writes this Boot version as the App's minimum Boot version.
  * A newer minimum is rejected by an older Boot; build dates need not match.
  */
-#define IMAGE_BOOT_VERSION            (0x00010700UL)
-#define IMAGE_BOOT_BUILD              (20261017UL)
+#define IMAGE_BOOT_VERSION            (0x00010702UL)
+#define IMAGE_BOOT_BUILD              (20261022UL)
 
 #endif
