@@ -8,17 +8,16 @@
 __near fsl_write_t fsl_write_str;
 
 /********************************************************************************
-* Function Name : init_fcl
-* Description   : This function initializes the FSL driver.
-* Parameters    : None
-* Return value  : FSL status code
-********************************************************************************/
+ * Function Name : init_fcl
+ * Description   : This function initializes the FSL driver.
+ * Parameters    : None
+ * Return value  : FSL status code
+ ********************************************************************************/
 uint8_t init_fcl(void)
 {
-    fsl_u08             fsl_err = FSL_ERR_PARAMETER;
-    fsl_descriptor_t    fsl_descr;
+    fsl_u08 fsl_err = FSL_ERR_PARAMETER;
+    fsl_descriptor_t fsl_descr;
     // fsl_fsw_t           fsl_window;
-
 
     /* Benchmark CPU clock is 32 MHz. Never initialize FSL on a failed PLL. */
     if (F13_BoardClockReady() == 0U)
@@ -32,8 +31,8 @@ uint8_t init_fcl(void)
     fsl_descr.fsl_frequency_u08 = FREQUENCY_32M; /* CPU32 from the board PLL. */
     fsl_descr.fsl_auto_status_check_u08 = INTERNAL_MODE;
 
-    fsl_err = FSL_Init((__far fsl_descriptor_t*)&fsl_descr);
-    if(fsl_err != FSL_OK)
+    fsl_err = FSL_Init((__far fsl_descriptor_t *)&fsl_descr);
+    if (fsl_err != FSL_OK)
     {
         return fsl_err;
     }
@@ -51,8 +50,8 @@ uint8_t init_fcl(void)
 
 uint8_t flash_erase_app_area(unsigned long i_u32_start_addr)
 {
-	uint8_t     fsl_status = FSL_ERR_PARAMETER;
-	uint16_t    l_u16_block_number;
+    uint8_t fsl_status = FSL_ERR_PARAMETER;
+    uint16_t l_u16_block_number;
 
     /* Reject Boot, protected tail and partial erase blocks before FSL access. */
     if ((i_u32_start_addr < APP_FLASH_START) ||
@@ -63,34 +62,34 @@ uint8_t flash_erase_app_area(unsigned long i_u32_start_addr)
     }
 
     /* This expression (actual block number) never exceeds the range of casting uint16_t */
-    l_u16_block_number          = (uint16_t)(i_u32_start_addr >> SAMPLE_VALUE_U08_SHIFT_ADDR_TO_BLOCK_CF);
+    l_u16_block_number = (uint16_t)(i_u32_start_addr >> SAMPLE_VALUE_U08_SHIFT_ADDR_TO_BLOCK_CF);
 
-    fsl_status = FSL_BlankCheck( l_u16_block_number );
-	#if 0	// status check user mode
+    fsl_status = FSL_BlankCheck(l_u16_block_number);
+#if 0 // status check user mode
 	while(fsl_status == FSL_BUSY) 
 	{ 
 		fsl_status = FSL_StatusCheck(); 
-	} 
-	#endif
+	}
+#endif
 
     /* If the target block is not in the blank state */
-    if( fsl_status == FSL_ERR_BLANKCHECK )
+    if (fsl_status == FSL_ERR_BLANKCHECK)
     {
-        fsl_status = FSL_Erase( l_u16_block_number );
-		#if 1
-		if (fsl_status != FSL_OK)
-		{
-			return fsl_status;
-		}
-		#else	// status check user mode
-        while(fsl_status == FSL_BUSY) 
-        { 
-            fsl_status = FSL_StatusCheck(); 
-        } 
-        #endif
+        fsl_status = FSL_Erase(l_u16_block_number);
+#if 1
+        if (fsl_status != FSL_OK)
+        {
+            return fsl_status;
+        }
+#else // status check user mode
+        while (fsl_status == FSL_BUSY)
+        {
+            fsl_status = FSL_StatusCheck();
+        }
+#endif
     }
 
-	return fsl_status;
+    return fsl_status;
 }
 
 // uint8_t flash_erase_app_area(void)
@@ -112,31 +111,31 @@ uint8_t flash_erase_app_area(unsigned long i_u32_start_addr)
 
 uint8_t flash_write_packet_data(uint32_t addr, uint8_t data[], uint16_t size)
 {
-	uint8_t     fsl_status = FSL_ERR_PARAMETER;
+    uint8_t fsl_status = FSL_ERR_PARAMETER;
 
     /* This wrapper writes one aligned four-byte word per call. */
     (void)size;
-    if ((data == 0) || (addr < APP_FLASH_START) ||
-        (addr > (FLASH_END_ADDRESS - 3UL)) || ((addr & 3UL) != 0UL))
+    if ((data == 0) || (addr < APP_FLASH_START) || (addr > (FLASH_END_ADDRESS - 3UL)) ||
+        ((addr & 3UL) != 0UL))
     {
         return FSL_ERR_PARAMETER;
     }
 
-	/* Setup data handler for write */
-    fsl_write_str.fsl_data_buffer_p_u08 = (__near fsl_u08 *) data;
+    /* Setup data handler for write */
+    fsl_write_str.fsl_data_buffer_p_u08 = (__near fsl_u08 *)data;
     // fsl_write_str.fsl_word_count_u08 = (uint8_t)(size/4);
-    fsl_write_str.fsl_word_count_u08 = (fsl_u08)( 1 );    // 1 word = 4 bytes
+    fsl_write_str.fsl_word_count_u08 = (fsl_u08)(1); // 1 word = 4 bytes
     fsl_write_str.fsl_destination_address_u32 = addr;
 
-	fsl_status = FSL_Write((__near fsl_write_t*) &fsl_write_str);
-    #if 0   // status check user mode
+    fsl_status = FSL_Write((__near fsl_write_t *)&fsl_write_str);
+#if 0 // status check user mode
     while(fsl_status == FSL_BUSY) 
     { 
         fsl_status = FSL_StatusCheck(); 
-    } 
-    #endif
+    }
+#endif
 
-	return fsl_status;
+    return fsl_status;
 }
 
 // void flash_read_packet_data(uint32_t addr, uint8_t data[], uint16_t size)
@@ -168,29 +167,3 @@ uint8_t flash_write_packet_data(uint32_t addr, uint8_t data[], uint16_t size)
 // 	/* Should never occur, this silences compiler */
 // 	return fsl_status;
 // }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

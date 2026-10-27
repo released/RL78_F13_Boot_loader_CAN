@@ -5,8 +5,8 @@
 #endif
 #include "f13_board_support.h"
 
-static unsigned char BoardWait8(volatile unsigned char __near * reg,
-                               unsigned char mask, unsigned char expected)
+static unsigned char BoardWait8(volatile unsigned char __near *reg, unsigned char mask,
+                                unsigned char expected)
 {
     unsigned long poll;
 
@@ -23,9 +23,10 @@ static unsigned char BoardWait8(volatile unsigned char __near * reg,
 
 unsigned char F13_BoardClockReady(void)
 {
-    return (((CMC & 0xC1U) == 0x40U) && (MSTOP == 0U) &&
-            ((CKC & 0xF0U) == 0x30U) && (MDIV == 0U) &&
-            (PLLCTL == 0x47U) && ((PLLSTS & 0x88U) == 0x88U)) ? 1U : 0U;
+    return (((CMC & 0xC1U) == 0x40U) && (MSTOP == 0U) && ((CKC & 0xF0U) == 0x30U) && (MDIV == 0U) &&
+            (PLLCTL == 0x47U) && ((PLLSTS & 0x88U) == 0x88U))
+               ? 1U
+               : 0U;
 }
 
 void F13_BoardClockPrepare(void)
@@ -102,8 +103,7 @@ unsigned char F13_BoardClockStart(void)
         return BoardClockFallback(F13_BOARD_CLOCK_SELECT_TIMEOUT);
     }
     RTCCL = 0x42U;
-    return F13_BoardClockReady() ? F13_BOARD_CLOCK_OK :
-        F13_BOARD_CLOCK_CONFIG_ERROR;
+    return F13_BoardClockReady() ? F13_BOARD_CLOCK_OK : F13_BOARD_CLOCK_CONFIG_ERROR;
 }
 
 unsigned char F13_BoardCanPrepare(void)

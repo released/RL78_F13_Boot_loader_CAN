@@ -18,20 +18,20 @@
  * Never enable CAN/FSL on a failed clock start. Do not import F24 clock or
  * flash-library settings into F13; these MCUs have different requirements.
  */
-#define F13_BOARD_CPU_MHZ             (32U)
-#define F13_BOARD_CLOCK_OK            (0U)
-#define F13_BOARD_CLOCK_CONFIG_ERROR  (1U)
-#define F13_BOARD_CLOCK_X1_TIMEOUT    (2U)
-#define F13_BOARD_CLOCK_MAIN_TIMEOUT  (3U)
-#define F13_BOARD_CLOCK_PLL_TIMEOUT   (4U)
+#define F13_BOARD_CPU_MHZ (32U)
+#define F13_BOARD_CLOCK_OK (0U)
+#define F13_BOARD_CLOCK_CONFIG_ERROR (1U)
+#define F13_BOARD_CLOCK_X1_TIMEOUT (2U)
+#define F13_BOARD_CLOCK_MAIN_TIMEOUT (3U)
+#define F13_BOARD_CLOCK_PLL_TIMEOUT (4U)
 #define F13_BOARD_CLOCK_SELECT_TIMEOUT (5U)
 #define F13_BOARD_CLOCK_FALLBACK_ERROR (6U)
 
 #ifndef F13_BOARD_CLOCK_POLL_LIMIT
-#define F13_BOARD_CLOCK_POLL_LIMIT    (2000000UL)
+#define F13_BOARD_CLOCK_POLL_LIMIT (2000000UL)
 #endif
 #ifndef F13_BOARD_CAN_POLL_LIMIT
-#define F13_BOARD_CAN_POLL_LIMIT      (60000UL)
+#define F13_BOARD_CAN_POLL_LIMIT (60000UL)
 #endif
 
 void F13_BoardClockPrepare(void);

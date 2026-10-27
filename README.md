@@ -239,7 +239,8 @@ Product-specific power-failure and FSL fault validation remain required.
 
 | File | Responsibility |
 | --- | --- |
-| `r_main.c` | Boot decision, hardware setup and app handoff |
+| `r_main.c` | Startup entry adapter calling the user-owned Boot services |
+| `custom_func.c` | Boot decision, hardware setup, foreground update session and App handoff |
 | `can_boot_transport.c`, `.h` | CAN firmware-update protocol |
 | `image_metadata_config.h` | Image format, MCU/Flash, policy, IRQ ABI and Boot identity |
 | `image_metadata.c`, `.h` | Independent metadata decode/validation, no CAN driver or Flash writes |
@@ -250,3 +251,12 @@ Product-specific power-failure and FSL fault validation remain required.
 | `fsl_flash_interface.c`, `.h` | RL78/F13 FSL erase/write wrapper |
 | `sw_crc32.c`, `.h` | Application CRC32 verification |
 | `user_def.h` | Flash layout and board constants |
+
+## User code entry
+
+`custom_func.c` provides `hardware_init()` for initialization and `loop()` for
+foreground service. Add application initialization and foreground work through
+these callbacks, retaining the existing communication service calls.
+The selected main/startup adapter owns entry and handoff. Generated peripheral
+files remain under `src/`; retain the project's MTPJ source selection when using
+Code Generator or Smart Configurator, then rebuild to validate the image and vectors.

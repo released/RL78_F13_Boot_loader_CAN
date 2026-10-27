@@ -40,3 +40,12 @@ firmware as part of device metadata/vector changes.
 - CRC byte traversal must use 32-bit integer address arithmetic before a far
   pointer cast; CC-RL pointer increments wrap at 64 KiB. Run the shared
   test_device_crc_boundary.ps1 native and target-assembly guards after edits.
+
+## User code entry
+
+Use project-local custom_func.c hardware_init()/loop() callbacks. Preserve the
+selected main/startup adapter and role-specific initialization/handoff ordering.
+Keep generated main sources from becoming a second active entry. Preparation
+templates and SC checks must preserve these bindings. Expand handwritten control
+flow with braces and one statement per line; do not introduce transfer_main.c
+or transfer_fd_main.c.

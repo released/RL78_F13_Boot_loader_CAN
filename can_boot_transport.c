@@ -12,16 +12,16 @@
 #include "RSCANconf/RSCANlite.c"
 #include "RSCANconf/r_rl78_can_drv.c"
 
-#define CAN_BOOT_DATA_BYTES         (4U)
-#define CAN_BOOT_FRAME_DLC          (8U)
-#define CAN_BOOT_CAPACITY_KIB       (FLASH_UPDATE_MAX_SIZE / 1024UL)
+#define CAN_BOOT_DATA_BYTES (4U)
+#define CAN_BOOT_FRAME_DLC (8U)
+#define CAN_BOOT_CAPACITY_KIB (FLASH_UPDATE_MAX_SIZE / 1024UL)
 
 #if (CAN_BOOT_INACTIVITY_TIMEOUT_MS > 65535U)
 #error CAN_BOOT_INACTIVITY_TIMEOUT_MS must fit in the 16-bit timer counter.
 #endif
 
-extern unsigned char Sample_CodeFlashControl_SingleWrite(
-    unsigned long address, unsigned char __near * data);
+extern unsigned char Sample_CodeFlashControl_SingleWrite(unsigned long address,
+                                                         unsigned char __near *data);
 extern unsigned char Sample_CodeFlashControl_Erase(unsigned long address);
 
 static volatile unsigned short g_can_boot_inactivity_ms;
@@ -67,8 +67,7 @@ static signed long CAN_BootFinish(signed long result)
 
 void CAN_BootTimerTick(void)
 {
-    if ((g_can_boot_timeout_enabled != 0U) &&
-        (g_can_boot_timeout_expired == 0U))
+    if ((g_can_boot_timeout_enabled != 0U) && (g_can_boot_timeout_expired == 0U))
     {
         g_can_boot_inactivity_ms++;
         if (g_can_boot_inactivity_ms >= CAN_BOOT_INACTIVITY_TIMEOUT_MS)
@@ -79,7 +78,7 @@ void CAN_BootTimerTick(void)
     }
 }
 
-static void CAN_BootTransmit(can_frame_t * frame)
+static void CAN_BootTransmit(can_frame_t *frame)
 {
     Can_RtnType result;
     unsigned long poll_count;
@@ -93,8 +92,7 @@ static void CAN_BootTransmit(can_frame_t * frame)
         }
         result = R_CAN_TrmByTxBuf(CAN_CH0, CAN_TXBUF0, frame);
         poll_count++;
-    } while ((result == CAN_RTN_STS_ERROR) &&
-             (poll_count < CAN_BOOT_CAN_TX_POLL_LIMIT));
+    } while ((result == CAN_RTN_STS_ERROR) && (poll_count < CAN_BOOT_CAN_TX_POLL_LIMIT));
 
     if (result == CAN_RTN_OK)
     {
@@ -107,13 +105,12 @@ static void CAN_BootTransmit(can_frame_t * frame)
             }
             result = R_CAN_CheckTxBufResult(CAN_CH0, CAN_TXBUF0);
             poll_count++;
-        } while ((result == CAN_RTN_TRANSMITTING) &&
-                 (poll_count < CAN_BOOT_CAN_TX_POLL_LIMIT));
+        } while ((result == CAN_RTN_TRANSMITTING) && (poll_count < CAN_BOOT_CAN_TX_POLL_LIMIT));
     }
 }
 
-static void CAN_BootSend(unsigned char command, unsigned char status,
-                         unsigned short sequence, unsigned long value)
+static void CAN_BootSend(unsigned char command, unsigned char status, unsigned short sequence,
+                         unsigned long value)
 {
     can_frame_t frame;
 
@@ -140,14 +137,13 @@ static void CAN_BootSend(unsigned char command, unsigned char status,
 static void CAN_BootSendHello(unsigned char status)
 {
     CAN_BootSend(CAN_BOOT_CMD_HELLO, status,
-        (unsigned short)CAN_BOOT_PROTOCOL_VERSION | ((unsigned short)IMAGE_FORMAT_VERSION << 8),
-        (unsigned long)IMAGE_TARGET_ID | ((unsigned long)CAN_BOOT_CAPACITY_KIB << 16));
+                 (unsigned short)CAN_BOOT_PROTOCOL_VERSION |
+                     ((unsigned short)IMAGE_FORMAT_VERSION << 8),
+                 (unsigned long)IMAGE_TARGET_ID | ((unsigned long)CAN_BOOT_CAPACITY_KIB << 16));
 }
 
-static const unsigned long g_can_boot_info_values[] =
-{
-    (unsigned long)IMAGE_TARGET_ID |
-        ((unsigned long)CAN_BOOT_PROTOCOL_VERSION << 16) |
+static const unsigned long g_can_boot_info_values[] = {
+    (unsigned long)IMAGE_TARGET_ID | ((unsigned long)CAN_BOOT_PROTOCOL_VERSION << 16) |
         ((unsigned long)IMAGE_FORMAT_VERSION << 24),
     IMAGE_BOOT_VERSION,
     IMAGE_BOOT_BUILD,
@@ -158,10 +154,8 @@ static const unsigned long g_can_boot_info_values[] =
     FLASH_TOTAL_SIZE,
     IMAGE_RESERVED_SIZE,
     FLASH_BYTE_PER_BLOCK,
-    (unsigned long)CAN_BOOT_CAN_MODE_CLASSICAL |
-        ((unsigned long)CAN_BOOT_CAN_ID_STANDARD << 8) |
-        ((unsigned long)IMAGE_CHECKSUM_CRC32 << 16) |
-        ((unsigned long)CAN_BOOT_PROTOCOL_ID << 24),
+    (unsigned long)CAN_BOOT_CAN_MODE_CLASSICAL | ((unsigned long)CAN_BOOT_CAN_ID_STANDARD << 8) |
+        ((unsigned long)IMAGE_CHECKSUM_CRC32 << 16) | ((unsigned long)CAN_BOOT_PROTOCOL_ID << 24),
     CAN_BOOT_NOMINAL_500K_MASK,
     CAN_BOOT_DATA_BITRATE_MASK,
     CAN_BOOT_REQUEST_ID,
@@ -178,7 +172,8 @@ static const unsigned long g_can_boot_info_values[] =
     IMAGE_POLICY_WORD,
     IMAGE_IRQ_ABI,
     CAN_BOOT_BLOCK_INFO,
-    0UL, 7UL /* Health page reserved in Boot; health/VERIFY/detail capabilities. */
+    0UL,
+    7UL /* Health page reserved in Boot; health/VERIFY/detail capabilities. */
 };
 
 static void CAN_BootSendInfo(unsigned char page, unsigned char status)
@@ -197,25 +192,25 @@ static void CAN_BootSendInfo(unsigned char page, unsigned char status)
     else
     {
         value = g_can_boot_info_values[page];
-        if (((page == CAN_BOOT_INFO_PAGE_APP_VERSION) ||
-             (page == CAN_BOOT_INFO_PAGE_APP_BUILD) ||
+        if (((page == CAN_BOOT_INFO_PAGE_APP_VERSION) || (page == CAN_BOOT_INFO_PAGE_APP_BUILD) ||
              (page == CAN_BOOT_INFO_PAGE_APP_IMAGE_SIZE)) &&
-            (ImageMetadataValidate((const unsigned long __far *)APP_MANIFEST_ADDRESS) == IMAGE_METADATA_OK))
+            (ImageMetadataValidate((const unsigned long __far *)APP_MANIFEST_ADDRESS) ==
+             IMAGE_METADATA_OK))
         {
             value = *(__far unsigned long *)(APP_MANIFEST_ADDRESS +
-                ((page == CAN_BOOT_INFO_PAGE_APP_IMAGE_SIZE) ?
-                    IMAGE_MANIFEST_SIZE_OFFSET :
-                 (page == CAN_BOOT_INFO_PAGE_APP_VERSION) ?
-                    IMAGE_MANIFEST_VERSION_OFFSET :
-                    IMAGE_MANIFEST_BUILD_OFFSET));
+                                             ((page == CAN_BOOT_INFO_PAGE_APP_IMAGE_SIZE)
+                                                  ? IMAGE_MANIFEST_SIZE_OFFSET
+                                              : (page == CAN_BOOT_INFO_PAGE_APP_VERSION)
+                                                  ? IMAGE_MANIFEST_VERSION_OFFSET
+                                                  : IMAGE_MANIFEST_BUILD_OFFSET));
         }
     }
 
     CAN_BootSend(CAN_BOOT_CMD_INFO, status,
-        (unsigned short)page | ((unsigned short)CAN_BOOT_STATE_BOOTLOADER << 8), value);
+                 (unsigned short)page | ((unsigned short)CAN_BOOT_STATE_BOOTLOADER << 8), value);
 }
 
-static unsigned char CAN_BootRead(can_frame_t * frame)
+static unsigned char CAN_BootRead(can_frame_t *frame)
 {
     Can_RtnType result;
 
@@ -240,13 +235,11 @@ static unsigned char CAN_BootRead(can_frame_t * frame)
 #include "can_boot_verify.inc"
 #include "can_boot_block.inc"
 
-static signed long CAN_BootWrite(unsigned long address,
-                                 unsigned char __near * data)
+static signed long CAN_BootWrite(unsigned long address, unsigned char __near *data)
 {
     unsigned char status;
 
-    if ((address < FLASH_AREA) ||
-        (address > (FLASH_END_ADDRESS - (CAN_BOOT_DATA_BYTES - 1U))))
+    if ((address < FLASH_AREA) || (address > (FLASH_END_ADDRESS - (CAN_BOOT_DATA_BYTES - 1U))))
     {
         return CAN_BOOT_RESULT_SIZE_ERROR;
     }
@@ -274,7 +267,7 @@ static signed long CAN_BootWrite(unsigned long address,
 static unsigned long FrameValue(const can_frame_t *frame)
 {
     return (unsigned long)frame->DB[4] | ((unsigned long)frame->DB[5] << 8) |
-        ((unsigned long)frame->DB[6] << 16) | ((unsigned long)frame->DB[7] << 24);
+           ((unsigned long)frame->DB[6] << 16) | ((unsigned long)frame->DB[7] << 24);
 }
 
 unsigned char CAN_BootInit(void)
@@ -289,8 +282,7 @@ unsigned char CAN_BootInit(void)
 
     result = CAN_RTN_RAM_INIT;
     poll_count = 0UL;
-    while ((result != CAN_RTN_OK) &&
-           (poll_count < CAN_BOOT_CAN_INIT_POLL_LIMIT))
+    while ((result != CAN_RTN_OK) && (poll_count < CAN_BOOT_CAN_INIT_POLL_LIMIT))
     {
         result = R_CAN_Init();
         poll_count++;
@@ -302,8 +294,7 @@ unsigned char CAN_BootInit(void)
     }
     result = CAN_RTN_MODE_WAIT;
     poll_count = 0UL;
-    while ((result == CAN_RTN_MODE_WAIT) &&
-           (poll_count < CAN_BOOT_CAN_INIT_POLL_LIMIT))
+    while ((result == CAN_RTN_MODE_WAIT) && (poll_count < CAN_BOOT_CAN_INIT_POLL_LIMIT))
     {
         result = R_CAN_GlobalStart();
         poll_count++;
@@ -315,8 +306,7 @@ unsigned char CAN_BootInit(void)
     }
     result = CAN_RTN_MODE_WAIT;
     poll_count = 0UL;
-    while ((result == CAN_RTN_MODE_WAIT) &&
-           (poll_count < CAN_BOOT_CAN_INIT_POLL_LIMIT))
+    while ((result == CAN_RTN_MODE_WAIT) && (poll_count < CAN_BOOT_CAN_INIT_POLL_LIMIT))
     {
         result = R_CAN_ChStart(CAN_CH0);
         poll_count++;
@@ -336,8 +326,7 @@ unsigned char CAN_BootInit(void)
     return 1U;
 }
 
-signed long CAN_BootReceive(unsigned long destination,
-                            unsigned char flash_init_status,
+signed long CAN_BootReceive(unsigned long destination, unsigned char flash_init_status,
                             unsigned char timeout_enabled)
 {
     can_frame_t frame;
@@ -364,7 +353,12 @@ signed long CAN_BootReceive(unsigned long destination,
     MetadataReset();
     g_version_policy = 0U;
     if (CAN_BootInstalledValid())
-        g_version_policy = (unsigned char)(1U | (*(__far unsigned char *)(APP_MANIFEST_ADDRESS + IMAGE_VERSION_CONTROL_OFFSET) << 1));
+    {
+        g_version_policy =
+            (unsigned char)(1U | (*(__far unsigned char *)(APP_MANIFEST_ADDRESS +
+                                                           IMAGE_VERSION_CONTROL_OFFSET)
+                                  << 1));
+    }
     CAN_BootTimeoutStart(timeout_enabled);
 
     for (;;)
@@ -384,7 +378,10 @@ signed long CAN_BootReceive(unsigned long destination,
 
         if (frame.IDL != CAN_BOOT_REQUEST_ID)
         {
-            if (started != 0U) BlockSegment((unsigned char)(frame.IDL & 7U), frame.DLC, frame.DB);
+            if (started != 0U)
+            {
+                BlockSegment((unsigned char)(frame.IDL & 7U), frame.DLC, frame.DB);
+            }
             continue;
         }
         hello_status = CAN_BOOT_STATUS_OK;
@@ -393,212 +390,222 @@ signed long CAN_BootReceive(unsigned long destination,
         result = 0L;
         switch (frame.DB[0])
         {
-            case CAN_BOOT_CMD_HELLO:
+        case CAN_BOOT_CMD_HELLO:
+            hello_status = CAN_BOOT_STATUS_OK;
+            if (flash_init_status != FSL_OK)
+            {
+                hello_status = CAN_BOOT_STATUS_FLASH_ERROR;
+            }
+            CAN_BootSendHello(hello_status);
+            continue;
+
+        case CAN_BOOT_CMD_INFO:
+            if (frame.DLC != 2U)
+            {
+                CAN_BootSendInfo(0xFFU, CAN_BOOT_STATUS_BAD_SIZE);
+            }
+            else
+            {
+                CAN_BootSendInfo(frame.DB[1], CAN_BOOT_STATUS_OK);
+            }
+            continue;
+
+        case CAN_BOOT_CMD_VERIFY:
+            hello_status = CAN_BOOT_STATUS_BAD_STATE;
+            detail = 0U;
+            reply = 0UL;
+            if (started == 0U && frame.DLC == 1U)
+            {
+                hello_status = VerifyImage((const unsigned long __far *)destination,
+                                           &manifest_image_size, &reply);
+            }
+            break;
+
+        case CAN_BOOT_CMD_METADATA_RESET:
+            hello_status = CAN_BOOT_STATUS_BAD_STATE;
+            if (started == 0U && frame.DLC == 1U)
+            {
+                MetadataReset();
                 hello_status = CAN_BOOT_STATUS_OK;
-                if (flash_init_status != FSL_OK)
-                {
-                    hello_status = CAN_BOOT_STATUS_FLASH_ERROR;
-                }
-                CAN_BootSendHello(hello_status);
-                continue;
+            }
+            detail = 0U;
+            reply = 256UL;
+            break;
 
-            case CAN_BOOT_CMD_INFO:
-                if (frame.DLC != 2U)
-                {
-                    CAN_BootSendInfo(0xFFU, CAN_BOOT_STATUS_BAD_SIZE);
-                }
-                else
-                {
-                    CAN_BootSendInfo(frame.DB[1], CAN_BOOT_STATUS_OK);
-                }
-                continue;
+        case CAN_BOOT_CMD_METADATA:
+            hello_status = CAN_BOOT_STATUS_BAD_STATE;
+            if (started == 0U && frame.DLC == 8U && frame.DB[3] == 0U)
+            {
+                hello_status = MetadataStage(
+                    (unsigned short)frame.DB[1] | ((unsigned short)frame.DB[2] << 8), &frame.DB[4]);
+            }
+            detail = g_metadata_staged;
+            reply = 256UL;
+            break;
 
-            case CAN_BOOT_CMD_VERIFY:
-                hello_status = CAN_BOOT_STATUS_BAD_STATE;
+        case CAN_BOOT_CMD_SEAL:
+            hello_status = CAN_BOOT_STATUS_BAD_IMAGE;
+            if (started == 0U && frame.DLC == 8U && frame.DB[1] == 0U && frame.DB[2] == 0U &&
+                frame.DB[3] == 0U)
+            {
+                hello_status = MetadataSeal(FrameValue(&frame));
+            }
+            detail = g_metadata_staged;
+            reply = 256UL;
+            break;
+
+        case CAN_BOOT_CMD_START:
+        case CAN_BOOT_CMD_FORCE_START:
+            if (frame.DLC != CAN_BOOT_FRAME_DLC)
+            {
+                hello_status = CAN_BOOT_STATUS_BAD_SIZE;
+                reply = FLASH_UPDATE_MAX_SIZE;
+                break;
+            }
+            target_id = (unsigned short)frame.DB[2] | ((unsigned short)frame.DB[3] << 8);
+            if (target_id != IMAGE_TARGET_ID || frame.DB[1] != CAN_BOOT_PROTOCOL_VERSION)
+            {
+                hello_status = CAN_BOOT_STATUS_BAD_TARGET;
+                reply = IMAGE_TARGET_ID;
+                break;
+            }
+            value = FrameValue(&frame);
+            if (g_metadata_sealed == 0U || value != g_metadata_words[6])
+            {
+                hello_status = CAN_BOOT_STATUS_BAD_IMAGE;
                 detail = 0U;
                 reply = 0UL;
-                if (started == 0U && frame.DLC == 1U)
-                {
-                    hello_status=VerifyImage((const unsigned long __far *)destination,&manifest_image_size,&reply);
-                }
                 break;
-
-            case CAN_BOOT_CMD_METADATA_RESET:
-                hello_status = CAN_BOOT_STATUS_BAD_STATE;
-                if (started == 0U && frame.DLC == 1U)
-                {
-                    MetadataReset();
-                    hello_status = CAN_BOOT_STATUS_OK;
-                }
+            }
+            if (started != 0U)
+            {
                 detail = 0U;
-                reply = 256UL;
+                reply = destination;
                 break;
-
-            case CAN_BOOT_CMD_METADATA:
-                hello_status = CAN_BOOT_STATUS_BAD_STATE;
-                if (started == 0U && frame.DLC == 8U && frame.DB[3] == 0U)
-                {
-                    hello_status = MetadataStage((unsigned short)frame.DB[1] |
-                        ((unsigned short)frame.DB[2] << 8), &frame.DB[4]);
-                }
-                detail = g_metadata_staged;
-                reply = 256UL;
+            }
+            reply = *(__far unsigned long *)(APP_MANIFEST_ADDRESS + IMAGE_MANIFEST_VERSION_OFFSET);
+            if (!VersionAllowed(g_version_policy, reply, frame.DB[0]))
+            {
+                hello_status = CAN_BOOT_STATUS_VERSION;
                 break;
-
-            case CAN_BOOT_CMD_SEAL:
-                hello_status = CAN_BOOT_STATUS_BAD_IMAGE;
-                if (started == 0U && frame.DLC == 8U && frame.DB[1] == 0U &&
-                    frame.DB[2] == 0U && frame.DB[3] == 0U)
-                {
-                    hello_status = MetadataSeal(FrameValue(&frame));
-                }
-                detail = g_metadata_staged;
-                reply = 256UL;
+            }
+            image_size = value;
+            if (flash_init_status != FSL_OK)
+            {
+                hello_status = CAN_BOOT_STATUS_FLASH_ERROR;
+                reply = flash_init_status;
                 break;
+            }
+            address = destination;
+            expected_offset = 0UL;
+            started = 1U;
+            detail = 0U;
+            reply = address;
+            break;
 
-            case CAN_BOOT_CMD_START:
-            case CAN_BOOT_CMD_FORCE_START:
-                if (frame.DLC != CAN_BOOT_FRAME_DLC)
-                {
-                    hello_status = CAN_BOOT_STATUS_BAD_SIZE;
-                    reply = FLASH_UPDATE_MAX_SIZE;
-                    break;
-                }
-                target_id = (unsigned short)frame.DB[2] |
-                            ((unsigned short)frame.DB[3] << 8);
-                if (target_id != IMAGE_TARGET_ID || frame.DB[1] != CAN_BOOT_PROTOCOL_VERSION)
-                {
-                    hello_status = CAN_BOOT_STATUS_BAD_TARGET;
-                    reply = IMAGE_TARGET_ID;
-                    break;
-                }
-                value = FrameValue(&frame);
-                if (g_metadata_sealed == 0U || value != g_metadata_words[6])
-                {
-                    hello_status = CAN_BOOT_STATUS_BAD_IMAGE;
-                    detail = 0U;
-                    reply = 0UL;
-                    break;
-                }
-                if (started != 0U)
-                {
-                    detail = 0U;
-                    reply = destination;
-                    break;
-                }
-                reply = *(__far unsigned long *)(APP_MANIFEST_ADDRESS + IMAGE_MANIFEST_VERSION_OFFSET);
-                if (!VersionAllowed(g_version_policy, reply, frame.DB[0]))
-                {
-                    hello_status = CAN_BOOT_STATUS_VERSION;
-                    break;
-                }
-                image_size = value;
-                if (flash_init_status != FSL_OK)
-                {
-                    hello_status = CAN_BOOT_STATUS_FLASH_ERROR;
-                    reply = flash_init_status;
-                    break;
-                }
-                address = destination;
-                expected_offset = 0UL;
-                started = 1U;
-                detail = 0U;
-                reply = address;
-                break;
-
-            case CAN_BOOT_CMD_BLOCK_BEGIN:
-                g_block_bad = 1U;
-                if (started != 0U && frame.DLC == 8U)
-                {
-                    request_offset = (unsigned long)frame.DB[1] |
-                        ((unsigned long)frame.DB[2] << 8) | ((unsigned long)frame.DB[3] << 16);
-                    BlockBegin(request_offset, FrameValue(&frame), expected_offset, image_size);
-                }
-                continue;
-
-            case CAN_BOOT_CMD_BLOCK_COMMIT:
-                if ((started == 0U) || (frame.DLC != CAN_BOOT_FRAME_DLC))
-                {
-                    hello_status = CAN_BOOT_STATUS_BAD_STATE;
-                    break;
-                }
-                request_offset = (unsigned long)frame.DB[1] |
-                                 ((unsigned long)frame.DB[2] << 8) |
+        case CAN_BOOT_CMD_BLOCK_BEGIN:
+            g_block_bad = 1U;
+            if (started != 0U && frame.DLC == 8U)
+            {
+                request_offset = (unsigned long)frame.DB[1] | ((unsigned long)frame.DB[2] << 8) |
                                  ((unsigned long)frame.DB[3] << 16);
-                hello_status = BlockCheck(request_offset, FrameValue(&frame));
-                if (hello_status == CAN_BOOT_STATUS_OK && request_offset != expected_offset)
+                BlockBegin(request_offset, FrameValue(&frame), expected_offset, image_size);
+            }
+            continue;
+
+        case CAN_BOOT_CMD_BLOCK_COMMIT:
+            if ((started == 0U) || (frame.DLC != CAN_BOOT_FRAME_DLC))
+            {
+                hello_status = CAN_BOOT_STATUS_BAD_STATE;
+                break;
+            }
+            request_offset = (unsigned long)frame.DB[1] | ((unsigned long)frame.DB[2] << 8) |
+                             ((unsigned long)frame.DB[3] << 16);
+            hello_status = BlockCheck(request_offset, FrameValue(&frame));
+            if (hello_status == CAN_BOOT_STATUS_OK && request_offset != expected_offset)
+            {
+                hello_status =
+                    (F13_Crc32Bytes((const unsigned char __far *)(destination + request_offset),
+                                    g_block_length) == g_block_crc)
+                        ? CAN_BOOT_STATUS_OK
+                        : CAN_BOOT_STATUS_BAD_SEQUENCE;
+            }
+            else if (hello_status == CAN_BOOT_STATUS_OK)
+            {
+                if (expected_offset >= 0x100UL && expected_offset < 0x200UL)
                 {
-                    hello_status = (F13_Crc32Bytes((const unsigned char __far *)(destination + request_offset), g_block_length) == g_block_crc) ?
-                        CAN_BOOT_STATUS_OK : CAN_BOOT_STATUS_BAD_SEQUENCE;
-                }
-                else if (hello_status == CAN_BOOT_STATUS_OK)
-                {
-                    if (expected_offset >= 0x100UL && expected_offset < 0x200UL)
-                    {
-                        for (word = 0U; word < g_block_length / 4U; word++)
-                        {
-                            if (g_block_words[word] != g_metadata_words[(unsigned short)((expected_offset-0x100UL)/4UL)+word])
-                            {
-                                hello_status = CAN_BOOT_STATUS_BAD_IMAGE;
-                                result = CAN_BOOT_RESULT_IMAGE_ERROR;
-                                goto block_done;
-                            }
-                        }
-                    }
                     for (word = 0U; word < g_block_length / 4U; word++)
                     {
-                        result = CAN_BootWrite(address, (unsigned char __near *)&g_block_words[word]);
-                        if (result != 0L)
+                        if (g_block_words[word] !=
+                            g_metadata_words[(unsigned short)((expected_offset - 0x100UL) / 4UL) +
+                                             word])
                         {
-                            hello_status = CAN_BOOT_STATUS_FLASH_ERROR;
+                            hello_status = CAN_BOOT_STATUS_BAD_IMAGE;
+                            result = CAN_BOOT_RESULT_IMAGE_ERROR;
                             goto block_done;
                         }
-                        address += 4UL;
                     }
-                    expected_offset += g_block_length;
                 }
-block_done:
-                detail = (unsigned short)(request_offset / 64UL);
-                reply = address;
-                break;
-
-            case CAN_BOOT_CMD_END:
-                if ((started == 0U) ||
-                    (expected_offset != image_size) ||
-                    (address != (destination + image_size)))
+                for (word = 0U; word < g_block_length / 4U; word++)
                 {
-                    hello_status = CAN_BOOT_STATUS_BAD_SIZE;
-                    break;
+                    result = CAN_BootWrite(address, (unsigned char __near *)&g_block_words[word]);
+                    if (result != 0L)
+                    {
+                        hello_status = CAN_BOOT_STATUS_FLASH_ERROR;
+                        goto block_done;
+                    }
+                    address += 4UL;
                 }
-                manifest_image_size = *(__far unsigned long *)(APP_MANIFEST_ADDRESS + IMAGE_MANIFEST_SIZE_OFFSET);
-                if ((ImageMetadataValidate((const unsigned long __far *)APP_MANIFEST_ADDRESS) != IMAGE_METADATA_OK) ||
-                    (manifest_image_size != image_size))
-                {
-                    hello_status = CAN_BOOT_STATUS_BAD_IMAGE;
-                    reply = manifest_image_size;
-                    result = CAN_BOOT_RESULT_IMAGE_ERROR;
-                    break;
-                }
-                crc_address = destination + image_size - APP_CRC_SIZE;
-                reply = caculate_crc32_checksum(destination,
-                                                image_size - APP_CRC_SIZE);
-                if (reply != *(__far unsigned long *)crc_address)
-                {
-                    hello_status = CAN_BOOT_STATUS_CRC_ERROR;
-                    result = CAN_BOOT_RESULT_CRC_ERROR;
-                }
-                else result = (signed long)image_size;
-                break;
+                expected_offset += g_block_length;
+            }
+        block_done:
+            detail = (unsigned short)(request_offset / 64UL);
+            reply = address;
+            break;
 
-            case CAN_BOOT_CMD_ABORT:
-                result = CAN_BOOT_RESULT_ABORT;
+        case CAN_BOOT_CMD_END:
+            if ((started == 0U) || (expected_offset != image_size) ||
+                (address != (destination + image_size)))
+            {
+                hello_status = CAN_BOOT_STATUS_BAD_SIZE;
                 break;
+            }
+            manifest_image_size =
+                *(__far unsigned long *)(APP_MANIFEST_ADDRESS + IMAGE_MANIFEST_SIZE_OFFSET);
+            if ((ImageMetadataValidate((const unsigned long __far *)APP_MANIFEST_ADDRESS) !=
+                 IMAGE_METADATA_OK) ||
+                (manifest_image_size != image_size))
+            {
+                hello_status = CAN_BOOT_STATUS_BAD_IMAGE;
+                reply = manifest_image_size;
+                result = CAN_BOOT_RESULT_IMAGE_ERROR;
+                break;
+            }
+            crc_address = destination + image_size - APP_CRC_SIZE;
+            reply = caculate_crc32_checksum(destination, image_size - APP_CRC_SIZE);
+            if (reply != *(__far unsigned long *)crc_address)
+            {
+                hello_status = CAN_BOOT_STATUS_CRC_ERROR;
+                result = CAN_BOOT_RESULT_CRC_ERROR;
+            }
+            else
+            {
+                result = (signed long)image_size;
+            }
+            break;
 
-            default:
-                hello_status = CAN_BOOT_STATUS_BAD_COMMAND;
-                break;
+        case CAN_BOOT_CMD_ABORT:
+            result = CAN_BOOT_RESULT_ABORT;
+            break;
+
+        default:
+            hello_status = CAN_BOOT_STATUS_BAD_COMMAND;
+            break;
         }
         CAN_BootSend(frame.DB[0], hello_status, detail, reply);
-        if (result != 0L) return CAN_BootFinish(result);
+        if (result != 0L)
+        {
+            return CAN_BootFinish(result);
+        }
     }
 }

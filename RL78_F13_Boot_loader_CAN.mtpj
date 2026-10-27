@@ -1,4 +1,4 @@
-﻿<CubeSuiteProject PackageVersion="V8.14.00  [02 Jun 2025]">
+<CubeSuiteProject PackageVersion="V8.14.00  [02 Jun 2025]">
   <ProductVersion>9.14.00.00</ProductVersion>
   <Class Guid="68f4a651-b9cd-473b-a595-b00447132ffa">
     <Instance Guid="00000000-0000-0000-0000-000000000000">
@@ -266,7 +266,11 @@
       <TreeImageGuid>03cad1e8-2eb3-4cde-a8a3-982423631122</TreeImageGuid>
       <ParentItem>ed0f428b-dc83-4b58-84e0-49e0714edd0a</ParentItem>
     </Instance>
-  </Class>
+  
+<Instance Guid="284664d4-4ce6-452d-b9e5-f22fd3dbac92"><Name>custom_func.c</Name><Type>File</Type><RelativePath>custom_func.c</RelativePath><TreeImageGuid>941832c1-fc3b-4e1b-94e8-01ea17128b42</TreeImageGuid><ParentItem>e75d31df-ef3c-4ec9-9730-035fd2975de6</ParentItem></Instance>
+
+<Instance Guid="0ca44b6b-e834-4974-b1bd-26826d57bd67"><Name>custom_func.h</Name><Type>File</Type><RelativePath>custom_func.h</RelativePath><TreeImageGuid>03cad1e8-2eb3-4cde-a8a3-982423631122</TreeImageGuid><ParentItem>e75d31df-ef3c-4ec9-9730-035fd2975de6</ParentItem></Instance>
+</Class>
   <Class Guid="fb98844b-2c27-4275-9804-f6e63e204da0">
     <Instance Guid="fb98844b-2c27-4275-9804-f6e63e204da0">
       <TypeOfStorageOfUserSettings>UserMtudFile</TypeOfStorageOfUserSettings>
