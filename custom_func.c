@@ -18,17 +18,22 @@
  ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
- * File Name    : r_main.c
+ * File Name    : custom_func.c
  * Version      : CodeGenerator for RL78/F13 V2.03.07.02 [08 Nov 2021]
  * Device(s)    : R5F10BMG
  * Tool-Chain   : CCRL
- * Description  : This file implements main function.
+ * Description  : User initialization and foreground callbacks.
  * Creation Date: 2025/3/3
  ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
 Includes
 ***********************************************************************************************************************/
+/* Project/API reading notes: Project-owned initialization and foreground work.
+ * The selected main/startup adapter calls hardware_init() once and loop() repeatedly.
+ * Keep application changes here so generated entry sources remain replaceable; lower-level APIs
+ * live in this project's hal directories.
+ */
 #include "r_cg_macrodriver.h"
 #include "r_cg_cgc.h"
 #include "r_cg_port.h"
@@ -178,6 +183,9 @@ unsigned char verify_application_checksum(unsigned long image_size)
     return (CRC_stored == CRC_cal) ? (true) : (false);
 }
 
+/* Check the complete installed App before handoff: metadata/range, CRC trailer and the fixed App
+ * jump-table destinations must all pass.
+ */
 unsigned char CAN_BootInstalledValid(void)
 {
     unsigned long image_size;
@@ -501,6 +509,10 @@ void boot_hdwinit(void)
     boot_R_Systeminit();
 }
 
+/* Initialize the role selected by this project before foreground processing.
+ * Preserve clock, image/handoff and peripheral/IRQ enable order when adding application
+ * initialization.
+ */
 void hardware_init(void)
 {
     bool application_valid;
@@ -569,6 +581,10 @@ void boot_R_MAIN_UserInit(void);
  * Arguments    : None
  * Return Value : None
  ***********************************************************************************************************************/
+/* Foreground service point called repeatedly by the selected main adapter.
+ * Keep protocol/application work and text logging bounded so pending traffic and deferred actions
+ * can continue.
+ */
 void loop(void)
 {
 

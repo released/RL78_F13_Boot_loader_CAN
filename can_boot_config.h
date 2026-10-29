@@ -1,3 +1,8 @@
+/* Project/API reading notes: CAN transport configuration only: command/response IDs, mode and
+ * compiled timing declarations.
+ * Keep actual driver timing, Boot/App declarations and Tool selections compatible; neutral image
+ * geometry belongs to image_metadata_config.h.
+ */
 #ifndef CAN_BOOT_CONFIG_H
 #define CAN_BOOT_CONFIG_H
 

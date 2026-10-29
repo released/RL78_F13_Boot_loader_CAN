@@ -1,6 +1,6 @@
 param(
     [ValidateSet('Boot','App')][string]$Mode = 'Boot',
-    [string]$AppProject = (Join-Path $PSScriptRoot '..\RL78_F13_Boot_loader_CAN_app'),
+    [string]$AppProject = $PSScriptRoot,
     [switch]$CheckOnly
 )
 $ErrorActionPreference = 'Stop'

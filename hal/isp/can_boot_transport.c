@@ -1,3 +1,8 @@
+/* Project/API reading notes: CAN Boot protocol adapter.
+ * Validate frame length, command/state, metadata and update bounds before changing the session.
+ * Raw data acceptance, physical Flash completion and complete-image validation are separate
+ * stages.
+ */
 #include "r_cg_macrodriver.h"
 #include "r_cg_userdefine.h"
 #include "can_boot_transport.h"
@@ -5,12 +10,12 @@
 #include "fsl.h"
 #include "sw_crc32.h"
 #include "f13_board_support.h"
-#include "RSCANconf/r_rl78_can_drv.h"
+#include "r_rl78_can_drv.h"
 
 /* Compile the validated RS-CAN Lite configuration without changing generated
  * CS+ source-item metadata. */
-#include "RSCANconf/RSCANlite.c"
-#include "RSCANconf/r_rl78_can_drv.c"
+#include "RSCANlite.c"
+#include "r_rl78_can_drv.c"
 
 #define CAN_BOOT_DATA_BYTES (4U)
 #define CAN_BOOT_FRAME_DLC (8U)

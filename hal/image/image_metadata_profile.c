@@ -1,4 +1,9 @@
 /* MCU/ISP compatibility profile. The parser itself has no CAN dependency. */
+/* Project/API reading notes: Expected values for this project's serialized image contract.
+ * Root image_metadata_config.h and transport configuration supply platform values; App release
+ * identity comes from generated build inputs.
+ * Reserved bytes remain part of the validation contract.
+ */
 #include "image_metadata.h"
 #include "image_metadata_config.h"
 #include "can_boot_config.h"

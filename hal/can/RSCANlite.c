@@ -33,7 +33,7 @@
 #include "r_rl78_can_drv.h"
 #include "r_rl78_can_sfr.h"
 #include "RSCANlite.h"
-#include "../can_boot_config.h"
+#include "can_boot_config.h"
 
 #if CAN_RX_RULE_NUM > 0
 const uint16_t g_rxrule_table[CAN_RX_RULE_NUM][6] = {

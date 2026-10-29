@@ -1,3 +1,9 @@
+/* Project/API reading notes: Boot/App RAM handoff contract.
+ * Preserve the reserved address, signature/request validation and AA/55 owner meanings across
+ * both images.
+ * These RAM markers coordinate startup/IRQ ownership; they do not replace complete image
+ * validation.
+ */
 #ifndef BOOT_APP_HANDOFF_H
 #define BOOT_APP_HANDOFF_H
 

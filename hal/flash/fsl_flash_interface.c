@@ -1,3 +1,7 @@
+/* Project/API reading notes: FSL adapter for RL78 code Flash.
+ * Keep address/range validation before the vendor API; preparation, interrupt masking and RAM
+ * execution requirements belong to this layer rather than the transport decoder.
+ */
 
 #include <r_cg_macrodriver.h>
 #include "fsl_flash_interface.h"

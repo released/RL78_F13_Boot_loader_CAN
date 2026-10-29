@@ -1,3 +1,9 @@
+/* Project/API reading notes: Image CRC32/ISO-HDLC backend.
+ * The packaged image stores a little-endian CRC in its final four bytes; callers exclude that
+ * trailer from the calculation.
+ * RL78 Flash traversal uses 32-bit integer addresses before a far-pointer cast to cross 64 KiB
+ * safely.
+ */
 #include "sw_crc32.h"
 
 #ifdef F13_CRC_HOST_TEST
@@ -38,6 +44,10 @@ unsigned long F13_Crc32Bytes(const unsigned char __far *data, unsigned long size
 }
 
 #ifndef F13_CRC_HOST_TEST
+/* Calculate the CRC over the requested Flash byte range.
+ * Keep the address counter 32-bit so the RL78 traversal does not wrap at a 64-KiB pointer
+ * boundary.
+ */
 unsigned long caculate_crc32_checksum(unsigned long start, unsigned long size)
 {
     return F13_Crc32Bytes((const unsigned char __far *)start, size);

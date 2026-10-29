@@ -1,3 +1,9 @@
+/* Project/API reading notes: Project-local image contract: format, MCU/Flash geometry, IRQ ABI
+ * and required Boot identity.
+ * Addresses and capacities use bytes.
+ * Changing platform/layout values requires compatible Boot/App/linker/package settings; normal
+ * App release edits use app_image_config.h.
+ */
 #ifndef IMAGE_METADATA_CONFIG_H
 #define IMAGE_METADATA_CONFIG_H
 

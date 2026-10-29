@@ -1,3 +1,8 @@
+/* Project/API reading notes: Device CAN update interface.
+ * CAN IDs/rate declarations are configured in the local CAN header; image layout and identity
+ * remain in the neutral metadata contract.
+ * A valid frame alone does not authorize Flash modification.
+ */
 #ifndef CAN_BOOT_TRANSPORT_H
 #define CAN_BOOT_TRANSPORT_H
 

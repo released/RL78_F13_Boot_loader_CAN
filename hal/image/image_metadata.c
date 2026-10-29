@@ -1,4 +1,9 @@
 /* Portable C90 metadata operations; configuration is image-only. */
+/* Project/API reading notes: Decode and validate the serialized image contract without touching
+ * peripheral registers or Flash APIs.
+ * This parser checks metadata fields; callers separately check executable vectors, the full-image
+ * CRC, version policy and safe handoff conditions.
+ */
 #include "image_metadata.h"
 #include "image_metadata_config.h"
 
@@ -32,6 +37,9 @@
 #define IMAGE_METADATA_FIELD_RESULT(index) IMAGE_METADATA_BAD_IMAGE
 #endif
 
+/* Decode one bounded little-endian field from metadata.
+ * This read does not validate the image or perform Flash access/erase/program operations.
+ */
 unsigned char ImageMetadataRead32(const unsigned char IMAGE_METADATA_FAR *data,
                                   unsigned short length, unsigned short offset,
                                   unsigned long *value)
@@ -50,6 +58,10 @@ unsigned char ImageMetadataRead32(const unsigned char IMAGE_METADATA_FAR *data,
     return 1U;
 }
 
+/* Check the declared size, format, identity/layout/policy/IRQ contract and reserved words.
+ * App version/build/size are variable fields; full-image CRC and executable vectors are checked
+ * separately by the caller.
+ */
 unsigned char ImageMetadataValidate(const unsigned long IMAGE_METADATA_FAR *words)
 {
     unsigned char i;

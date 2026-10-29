@@ -1,3 +1,7 @@
+/* Project/API reading notes: F13 clock and peripheral binding.
+ * Boot establishes the board clock contract; App startup checks/inherits the paired configuration.
+ * Keep diagnostic UART, timebase and CAN routing aligned with the actual board.
+ */
 #if defined(F13_BOARD_HOST_TEST)
 #include "f13_board_mock.h"
 #else

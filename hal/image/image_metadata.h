@@ -1,3 +1,8 @@
+/* Project/API reading notes: Portable metadata API.
+ * Byte offsets are relative to the 256-byte metadata region, not Flash zero.
+ * Decoding a field is distinct from accepting an image; use the validation result and the
+ * caller's CRC/vector checks together.
+ */
 #ifndef IMAGE_METADATA_H
 #define IMAGE_METADATA_H
 
