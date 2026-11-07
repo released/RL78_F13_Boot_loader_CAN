@@ -3,7 +3,7 @@
 CAN self-programming boot loader for the Renesas RL78/F13 R5F10BMG.
 
 Start with the [RL78 Boot/App porting guide (zh-TW)](https://released.github.io/slide_boot_loader_for_RL78/#boot-app-porting)
-when integrating your own app or designing a different bootloader workflow.
+when integrating an App or designing a different bootloader workflow.
 
 For App metadata/IRQ editing, follow the
 [C-header device workshop](https://released.github.io/slide_boot_loader_for_RL78/#device-metadata-vector-workshop).
@@ -38,7 +38,7 @@ before START. Complete256-byte metadata is verified in RAM before flash access.
 The128-byte core includes UPD1 DEVICE_APP/CAN policy, F1V1 IRQ ABI and minimum
 boot version. Code starts at2200.
 
-## Status
+## Supported configuration
 
 Boot supplies read-only VERIFY, diagnostics capabilities and specific metadata,
 policy, IRQ ABI and partition error statuses. App supplies APP_READY after local
@@ -206,15 +206,15 @@ Product-specific power-failure and FSL fault validation remain required.
 | --- | --- |
 | `r_main.c` | Startup entry adapter calling the user-owned Boot services |
 | `custom_func.c` | Boot decision, hardware setup, foreground update session and App handoff |
-| `can_boot_transport.c`, `.h` | CAN firmware-update protocol |
+| `hal/isp/can_boot_transport.c`, `.h` | CAN firmware-update protocol |
 | `image_metadata_config.h` | Image format, MCU/Flash, policy, IRQ ABI and Boot identity |
-| `image_metadata.c`, `.h` | Independent metadata decode/validation, no CAN driver or Flash writes |
-| `image_metadata_profile.c` | Project-specific expected metadata core |
+| `hal/image/image_metadata.c`, `.h` | Independent metadata decode/validation, no CAN driver or Flash writes |
+| `hal/image/image_metadata_profile.c` | Project-specific expected metadata core |
 | `can_boot_config.h` | CAN IDs, rates, commands, filters and timeout |
 | `boot_app_handoff.h` | No-init RAM, owner markers and handoff signatures |
 | `RSCANconf\` | Renesas RS-CAN Lite driver and 500 kbit/s configuration |
-| `fsl_flash_interface.c`, `.h` | RL78/F13 FSL erase/write wrapper |
-| `sw_crc32.c`, `.h` | Application CRC32 verification |
+| `hal/flash/fsl_flash_interface.c`, `.h` | RL78/F13 FSL erase/write wrapper |
+| `hal/image/sw_crc32.c`, `.h` | Application CRC32 verification |
 | `user_def.h` | Flash layout and board constants |
 
 ## User code entry
